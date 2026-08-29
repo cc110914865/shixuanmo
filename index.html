@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>shixuanmo · 我做的小游戏</title>
+  <meta name="description" content="shixuanmo 的个人主页，这里陈列着我用代码造出来的一个个小游戏世界。">
+
+  <!-- TailwindCSS v3.4 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Helvetica Neue"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+          },
+          animation: {
+            'float': 'float 9s ease-in-out infinite',
+            'float-slow': 'float 14s ease-in-out infinite',
+            'marquee': 'marquee 28s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+              '33%': { transform: 'translate(40px, -50px) scale(1.08)' },
+              '66%': { transform: 'translate(-30px, 30px) scale(0.95)' },
+            },
+            marquee: {
+              '0%': { transform: 'translateX(0)' },
+              '100%': { transform: 'translateX(-50%)' },
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ---------- 基础 ---------- */
+    html, body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+    /* 渐变文字 */
+    .text-gradient {
+      background: linear-gradient(120deg, #a78bfa 0%, #60a5fa 45%, #f472b6 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* 毛玻璃 */
+    .glass {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+    .glass-dark {
+      background: rgba(17, 24, 39, 0.55);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+    }
+
+    /* 隐藏的滚动条 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* 滚动渐显 */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+    .reveal.is-visible { opacity: 1; transform: none; }
+
+    /* 卡片悬停 */
+    .card-hover { transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s cubic-bezier(.2,.7,.2,1); }
+    .card-hover:hover { transform: translateY(-6px); }
+
+    /* 占位卡片的"敬请期待" */
+    .locked-img { filter: grayscale(.85) brightness(.62) blur(1px); }
+  </style>
+</head>
+
+<body class="bg-[#f5f5f7] text-slate-900 font-sans antialiased">
+
+  <!-- ================= 导航栏 ================= -->
+  <header id="navbar" class="glass fixed inset-x-0 top-0 z-50 transition-all duration-500">
+    <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+      <!-- 品牌 -->
+      <a href="#home" class="flex items-center gap-2.5">
+        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-blue-500 to-pink-500 text-sm font-bold text-white shadow-lg shadow-blue-500/25">S</span>
+        <span class="text-lg font-semibold tracking-tight">shixuanmo</span>
+      </a>
+
+      <!-- 桌面端菜单 -->
+      <div class="hidden items-center gap-1 md:flex">
+        <a href="#home" data-spy="home" class="nav-link rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900">首页</a>
+        <a href="#works" data-spy="works" class="nav-link rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900">作品</a>
+        <a href="#about" data-spy="about" class="nav-link rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900">关于</a>
+        <a href="#works" class="ml-2 rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-slate-700">浏览作品</a>
+      </div>
+
+      <!-- 移动端菜单按钮 -->
+      <button id="menuBtn" class="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-900/5 md:hidden" aria-label="打开菜单">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+    </nav>
+
+    <!-- 移动端下拉菜单 -->
+    <div id="mobileMenu" class="hidden border-t border-slate-900/5 px-6 py-4 md:hidden">
+      <div class="flex flex-col gap-1">
+        <a href="#home" class="mobile-link rounded-xl px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-900/5">首页</a>
+        <a href="#works" class="mobile-link rounded-xl px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-900/5">作品</a>
+        <a href="#about" class="mobile-link rounded-xl px-4 py-3 text-base font-medium text-slate-700 transition hover:bg-slate-900/5">关于</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 首屏 Hero ================= -->
+  <section id="home" class="relative overflow-hidden pt-16">
+    <!-- 背景：深色渐变 + 彩色光斑 -->
+    <div class="absolute inset-0 bg-gradient-to-b from-[#1e1b4b] via-[#111a3d] to-[#f5f5f7]"></div>
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute -left-32 top-16 h-[30rem] w-[30rem] animate-float rounded-full bg-violet-600/40 blur-[110px]"></div>
+      <div class="absolute right-[-10rem] top-40 h-[34rem] w-[34rem] animate-float-slow rounded-full bg-blue-600/40 blur-[120px]"></div>
+      <div class="absolute bottom-[-8rem] left-1/3 h-[26rem] w-[26rem] animate-float rounded-full bg-fuchsia-600/30 blur-[110px]" style="animation-delay:-4s"></div>
+    </div>
+
+    <!-- 星星点缀 -->
+    <div id="stars" class="pointer-events-none absolute inset-0"></div>
+
+    <div class="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl flex-col items-center justify-center px-6 py-24 text-center">
+      <!-- 徽章 -->
+      <div class="reveal glass-dark mb-8 flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-blue-200 ring-1 ring-white/15">
+        <i class="fa-solid fa-gamepad text-blue-300"></i>
+        <span>个人主页 · 小游戏作品集</span>
+      </div>
+
+      <!-- 主标题 -->
+      <h1 class="reveal text-5xl font-bold tracking-tight text-white sm:text-7xl lg:text-8xl">
+        shixuanmo<span class="text-gradient">.</span>
+      </h1>
+
+      <!-- 副标题 -->
+      <p class="reveal mt-6 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl" style="transition-delay:.1s">
+        我用代码造世界 —— 一个个小而有趣的方块小游戏。
+        <br class="hidden sm:block">从零开始，一块一块地搭建属于我的游戏宇宙。
+      </p>
+
+      <!-- 按钮 -->
+      <div class="reveal mt-10 flex flex-col items-center gap-4 sm:flex-row" style="transition-delay:.2s">
+        <a href="#works" class="group flex items-center gap-2.5 rounded-full bg-white px-8 py-3.5 text-base font-semibold text-slate-900 shadow-xl shadow-black/20 transition hover:scale-[1.03] hover:bg-slate-100">
+          查看我的作品
+          <i class="fa-solid fa-arrow-down text-sm transition-transform group-hover:translate-y-0.5"></i>
+        </a>
+        <a href="game3d.html" class="group flex items-center gap-2.5 rounded-full bg-white/10 px-8 py-3.5 text-base font-semibold text-white ring-1 ring-white/25 backdrop-blur transition hover:bg-white/20">
+          <i class="fa-solid fa-play text-sm"></i>
+          立即试玩「方块小世界」
+        </a>
+      </div>
+
+      <!-- 统计 -->
+      <div class="reveal mt-16 grid w-full max-w-2xl grid-cols-3 divide-x divide-white/10 rounded-2xl glass-dark ring-1 ring-white/10" style="transition-delay:.3s">
+        <div class="flex flex-col items-center gap-1 py-6">
+          <span class="text-3xl font-bold text-white sm:text-4xl">1</span>
+          <span class="text-xs text-slate-400 sm:text-sm">已发布游戏</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 py-6">
+          <span class="text-3xl font-bold text-white sm:text-4xl">11</span>
+          <span class="text-xs text-slate-400 sm:text-sm">筹备中</span>
+        </div>
+        <div class="flex flex-col items-center gap-1 py-6">
+          <span class="text-3xl font-bold text-gradient sm:text-4xl">∞</span>
+          <span class="text-xs text-slate-400 sm:text-sm">创作热情</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 作品区 ================= -->
+  <section id="works" class="relative mx-auto max-w-6xl px-6 py-24">
+    <!-- 区头 -->
+    <div class="mb-12 flex items-end justify-between">
+      <div>
+        <p class="reveal mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-widest text-blue-500">
+          <i class="fa-solid fa-layer-group"></i> My Games
+        </p>
+        <h2 class="reveal text-4xl font-bold tracking-tight sm:text-5xl">作品集</h2>
+        <p class="reveal mt-3 max-w-xl text-slate-500">每一款游戏都是一个独立的小宇宙。已上线的可以直接试玩，更多的正在酝酿之中。</p>
+      </div>
+      <div class="reveal hidden shrink-0 text-right sm:block">
+        <p class="text-sm font-semibold text-slate-700"><span class="text-gradient text-xl font-bold">1</span> / 12</p>
+        <p class="text-xs text-slate-400">持续更新中</p>
+      </div>
+    </div>
+
+    <!-- 卡片网格 -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+      <!-- ====== 卡片 1 · 已发布 ====== -->
+      <a href="game3d.html" class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=1" alt="方块小世界" class="h-full w-full object-cover transition duration-700 group-hover:scale-110" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+          <!-- 试玩角标 -->
+          <span class="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-900 backdrop-blur">
+            <i class="fa-solid fa-play text-[10px] text-blue-500"></i> 可试玩
+          </span>
+          <!-- 播放按钮 -->
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 transition duration-500 group-hover:opacity-100">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-slate-900 shadow-xl transition group-hover:scale-110">
+              <i class="fa-solid fa-play pl-1 text-xl"></i>
+            </span>
+          </div>
+        </div>
+        <div class="p-5">
+          <div class="mb-2 flex items-center justify-between">
+            <h3 class="text-lg font-bold tracking-tight">方块小世界</h3>
+            <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <i class="fa-solid fa-circle-check"></i>
+            </span>
+          </div>
+          <p class="mb-4 text-sm leading-relaxed text-slate-500">一款 3D 方块沙盒小游戏，亲手搭建、自由探索属于你的像素世界。</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">3D</span>
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">沙盒</span>
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">WebGL</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- ====== 卡片 2~12 · 敬请期待 ====== -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=2" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {02}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">2</span>
+        </div>
+      </div>
+
+      <!-- 占位 3 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=3" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {03}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">3</span>
+        </div>
+      </div>
+
+      <!-- 占位 4 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=4" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {04}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">4</span>
+        </div>
+      </div>
+
+      <!-- 占位 5 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=5" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {05}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">5</span>
+        </div>
+      </div>
+
+      <!-- 占位 6 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=6" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {06}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">6</span>
+        </div>
+      </div>
+
+      <!-- 占位 7 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=7" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {07}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">7</span>
+        </div>
+      </div>
+
+      <!-- 占位 8 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=8" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {08}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">8</span>
+        </div>
+      </div>
+
+      <!-- 占位 9 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=9" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {09}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">9</span>
+        </div>
+      </div>
+
+      <!-- 占位 10 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=10" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {10}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">10</span>
+        </div>
+      </div>
+
+      <!-- 占位 11 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=11" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {11}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">11</span>
+        </div>
+      </div>
+
+      <!-- 占位 12 -->
+      <div class="card-hover reveal group relative overflow-hidden rounded-3xl bg-white shadow-sm shadow-slate-900/5 ring-1 ring-slate-900/5">
+        <div class="relative aspect-video overflow-hidden">
+          <img src="https://picsum.photos/1920/1080?random=12" alt="敬请期待" class="locked-img h-full w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy">
+          <div class="absolute inset-0 bg-slate-900/50"></div>
+          <div class="absolute inset-0 flex flex-col items-center justify-center gap-2.5">
+            <span class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl text-white ring-1 ring-white/25 backdrop-blur">
+              <i class="fa-solid fa-clock"></i>
+            </span>
+            <span class="text-sm font-semibold text-white/90">敬请期待...</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-5">
+          <div>
+            <h3 class="text-base font-bold tracking-tight text-slate-700">新游戏 {12}</h3>
+            <p class="mt-1 text-xs text-slate-400">开发中</p>
+          </div>
+          <span class="h-7 w-7 rounded-full bg-slate-100 text-center leading-7 text-xs font-semibold text-slate-400">12</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= 关于我 ================= -->
+  <section id="about" class="mx-auto max-w-6xl px-6 pb-24">
+    <div class="reveal relative overflow-hidden rounded-[2.5rem] bg-slate-900 p-8 sm:p-14">
+      <!-- 内部光斑 -->
+      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-blue-500/25 blur-3xl"></div>
+
+      <div class="relative grid items-center gap-10 md:grid-cols-[auto_1fr]">
+        <!-- 头像 -->
+        <div class="mx-auto md:mx-0">
+          <div class="relative">
+            <div class="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-gradient-to-br from-violet-500 via-blue-500 to-pink-500 text-5xl font-bold text-white shadow-2xl shadow-blue-500/30 ring-4 ring-white/10">
+              S
+            </div>
+            <span class="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white ring-4 ring-slate-900">
+              <i class="fa-solid fa-circle-check text-sm"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- 文案 -->
+        <div class="text-center md:text-left">
+          <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">shixuanmo</h2>
+          <p class="mt-2 flex items-center justify-center gap-2 text-sm font-medium text-blue-300 md:justify-start">
+            <i class="fa-solid fa-code"></i> 我做的小游戏
+          </p>
+          <p class="mt-5 max-w-2xl text-base leading-relaxed text-slate-300">
+            我是一个热爱游戏与创造的开发者。从第一个方块落地开始，我就喜欢上了用代码一点点搭起可交互的世界。
+            希望我的每一款小游戏，都能给你带来一小段开心的时光。
+          </p>
+
+          <!-- 技能标签 -->
+          <div class="mt-7 flex flex-wrap justify-center gap-2.5 md:justify-start">
+            <span class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-slate-200 ring-1 ring-white/10">
+              <i class="fa-brands fa-js text-yellow-400"></i> JavaScript
+            </span>
+            <span class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-slate-200 ring-1 ring-white/10">
+              <i class="fa-brands fa-html5 text-orange-400"></i> HTML / CSS
+            </span>
+            <span class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-slate-200 ring-1 ring-white/10">
+              <i class="fa-solid fa-cubes text-emerald-400"></i> WebGL 3D
+            </span>
+            <span class="flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-slate-200 ring-1 ring-white/10">
+              <i class="fa-solid fa-wand-magic-sparkles text-fuchsia-400"></i> 创意设计
+            </span>
+          </div>
+
+          <!-- 联系方式 -->
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+            <a href="game3d.html" class="group flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:scale-[1.03]">
+              <i class="fa-solid fa-gamepad"></i> 试玩游戏
+            </a>
+            <a href="#" class="flex items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-medium text-slate-200 ring-1 ring-white/15 transition hover:bg-white/20">
+              <i class="fa-brands fa-github"></i> GitHub
+            </a>
+            <a href="#" class="flex items-center gap-2 rounded-full bg-white/10 px-5 py-2.5 text-sm font-medium text-slate-200 ring-1 ring-white/15 transition hover:bg-white/20">
+              <i class="fa-solid fa-envelope"></i> 联系我
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 底部 ================= -->
+  <footer class="border-t border-slate-200 bg-white/60">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
+      <p class="text-sm text-slate-500">
+        © <span id="year"></span> shixuanmo · 用 <i class="fa-solid fa-heart text-rose-500"></i> 制作的小游戏主页
+      </p>
+      <div class="flex items-center gap-5 text-sm text-slate-500">
+        <a href="#home" class="transition hover:text-slate-900">首页</a>
+        <a href="#works" class="transition hover:text-slate-900">作品</a>
+        <a href="#about" class="transition hover:text-slate-900">关于</a>
+        <a href="#" class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 transition hover:bg-slate-200" aria-label="GitHub">
+          <i class="fa-brands fa-github"></i>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================= 脚本 ================= -->
+  <script>
+    /* ---------- 年份 ---------- */
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    /* ---------- 星空点缀 ---------- */
+    (function () {
+      const box = document.getElementById('stars');
+      for (let i = 0; i < 46; i++) {
+        const dot = document.createElement('span');
+        const size = Math.random() * 2 + 1;
+        dot.className = 'absolute rounded-full bg-white';
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.top = Math.random() * 55 + '%';
+        dot.style.opacity = (Math.random() * 0.5 + 0.2).toFixed(2);
+        dot.style.boxShadow = '0 0 6px rgba(255,255,255,0.6)';
+        box.appendChild(dot);
+      }
+    })();
+
+    /* ---------- 移动端菜单 ---------- */
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    let menuOpen = false;
+    menuBtn.addEventListener('click', () => {
+      menuOpen = !menuOpen;
+      mobileMenu.classList.toggle('hidden', !menuOpen);
+      menuBtn.innerHTML = menuOpen
+        ? '<i class="fa-solid fa-xmark text-lg"></i>'
+        : '<i class="fa-solid fa-bars text-lg"></i>';
+    });
+    document.querySelectorAll('.mobile-link').forEach(a =>
+      a.addEventListener('click', () => {
+        menuOpen = false;
+        mobileMenu.classList.add('hidden');
+        menuBtn.innerHTML = '<i class="fa-solid fa-bars text-lg"></i>';
+      })
+    );
+
+    /* ---------- 滚动渐显 ---------- */
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    /* ---------- 滚动监听：导航高亮 + 导航栏实心化 ---------- */
+    const navbar = document.getElementById('navbar');
+    const links = document.querySelectorAll('.nav-link[data-spy]');
+    const sections = ['home', 'works', 'about'].map(id => document.getElementById(id));
+
+    window.addEventListener('scroll', () => {
+      // 滚过 Hero 后让导航栏更"实"
+      navbar.classList.toggle('shadow-lg', window.scrollY > 24);
+      navbar.classList.toggle('shadow-slate-900/5', window.scrollY > 24);
+
+      // 高亮当前区块
+      let current = 'home';
+      sections.forEach(sec => {
+        if (window.scrollY + 120 >= sec.offsetTop) current = sec.id;
+      });
+      links.forEach(l => {
+        const active = l.dataset.spy === current;
+        l.classList.toggle('bg-slate-900/5', active);
+        l.classList.toggle('text-slate-900', active);
+        l.classList.toggle('font-semibold', active);
+      });
+    });
+  </script>
+</body>
+</html>
