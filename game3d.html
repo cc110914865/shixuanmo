@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>方块世界</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -72,6 +73,46 @@
   #overlay .author { font-size: 18px; opacity: 0.92; text-shadow: 1px 1px 0 #000; margin-top: 14px; }
   #overlay .tip { font-size: 14px; opacity: 0.7; margin-top: 24px; }
   .hidden { display: none !important; }
+  /* ===== 手机触屏控制（仅触屏设备显示） ===== */
+  html, body { touch-action: none; overscroll-behavior: none; }
+  body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  #touchUI { display: none; pointer-events: none; z-index: 12; }
+  body.touch #touchUI { display: block; }
+  #joyBase {
+    position: fixed; left: 18px; bottom: 22px; width: 120px; height: 120px;
+    border-radius: 50%; background: rgba(0,0,0,0.28);
+    border: 2px solid rgba(255,255,255,0.4);
+    pointer-events: auto; touch-action: none;
+  }
+  #joyKnob {
+    position: absolute; left: 50%; top: 50%; width: 52px; height: 52px;
+    border-radius: 50%; background: rgba(255,255,255,0.5);
+    border: 2px solid rgba(255,255,255,0.8);
+    transform: translate(-50%, -50%);
+  }
+  #btns {
+    position: fixed; right: 16px; bottom: 96px;
+    display: grid; grid-template-areas: ". break" "place jump";
+    grid-template-columns: 58px 72px; grid-template-rows: 58px 72px;
+    gap: 12px; pointer-events: none;
+  }
+  .tbtn {
+    width: 100%; height: 100%; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5); background: rgba(0,0,0,0.32);
+    color: #fff; font-size: 15px; font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+    text-shadow: 1px 1px 0 #000;
+    pointer-events: auto; touch-action: none;
+  }
+  .tbtn:active { background: rgba(255,255,255,0.4); }
+  #btnBreak { grid-area: break; }
+  #btnPlace { grid-area: place; }
+  #btnJump  { grid-area: jump; font-size: 17px; }
+  /* 手机：缩小快捷栏避免遮挡，且可点按切换方块 */
+  body.touch #hud { bottom: 12px; gap: 3px; }
+  body.touch .slot { width: 30px; height: 30px; border-radius: 5px; pointer-events: auto; }
+  body.touch .slot .num { font-size: 9px; }
+  body.touch .swatch { width: 20px; height: 20px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.25); }
 </style>
 </head>
 <body>
@@ -81,6 +122,14 @@
   <canvas id="minimap" width="150" height="150"></canvas>
   <div id="crosshair"></div>
   <div id="hud"></div>
+  <div id="touchUI">
+    <div id="joyBase"><div id="joyKnob"></div></div>
+    <div id="btns">
+      <div class="tbtn" id="btnBreak">挖</div>
+      <div class="tbtn" id="btnPlace">放</div>
+      <div class="tbtn" id="btnJump">跳</div>
+    </div>
+  </div>
   <div id="overlay">
     <h1>方块世界</h1>
     <div class="author">本游戏为石某某制作</div>
@@ -536,6 +585,14 @@ let yaw = 0, pitch = 0;
 const keys = {};
 let selectedIdx = 0;
 const hudEl = document.getElementById('hud');
+// 触屏设备检测（手机/平板）；URL 加 ?touch=1 可在电脑上强制模拟手机模式
+const forceTouch = /[?&]touch=1/.test(location.search);
+const isTouch = forceTouch || (matchMedia('(pointer: coarse)').matches && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+if (isTouch) {
+  document.body.classList.add('touch');
+  document.querySelector('#overlay .tip').textContent = '点按屏幕开始游戏';
+  document.getElementById('hint').textContent = '左摇杆移动 ｜ 拖屏幕转视角 ｜ 点方块挖掘 ｜ 本游戏为石某某制作';
+}
 
 function buildHUD() {
   hudEl.innerHTML = '';
@@ -548,6 +605,15 @@ function buildHUD() {
   });
 }
 buildHUD();
+// 手机：点按快捷栏切换方块
+if (isTouch) {
+  hudEl.addEventListener('click', (e) => {
+    const slot = e.target.closest('.slot');
+    if (!slot) return;
+    const idx = Array.prototype.indexOf.call(hudEl.children, slot);
+    if (idx >= 0) { selectedIdx = idx; buildHUD(); }
+  });
+}
 
 const overlay = document.getElementById('overlay');
 // 拖拽视角模式：pointer lock 不可用时（如 iframe 预览环境）自动降级
@@ -560,8 +626,8 @@ try { inIframe = (window.self !== window.top); } catch (e) { inIframe = true; }
 
 renderer.domElement.addEventListener('click', () => {
   if (!locked && !useDragLook) {
-    // iframe 环境（如 trae-preview）不支持 pointer lock，直接降级
-    if (inIframe) { enableDragLook(); return; }
+    // iframe 环境（如 trae-preview）与触屏设备不支持 pointer lock，直接降级
+    if (inIframe || isTouch) { enableDragLook(); return; }
     try {
       const p = renderer.domElement.requestPointerLock();
       if (p && p.catch) p.catch(() => enableDragLook());  // Promise rejection（部分浏览器）
@@ -573,7 +639,9 @@ document.addEventListener('pointerlockerror', () => { enableDragLook(); });
 function enableDragLook() {
   useDragLook = true;
   overlay.classList.add('hidden');  // 隐藏封面，进入游戏
-  document.getElementById('hint').textContent = 'WASD 移动 ｜ 空格 跳跃 ｜ 左键拖动视角 / 单击破坏 ｜ 右键放置 ｜ 1-0 选方块 ｜ 本游戏为石某某制作';
+  document.getElementById('hint').textContent = isTouch
+    ? '左摇杆移动 ｜ 拖屏幕转视角 ｜ 点方块挖掘 ｜ 本游戏为石某某制作'
+    : 'WASD 移动 ｜ 空格 跳跃 ｜ 左键拖动视角 / 单击破坏 ｜ 右键放置 ｜ 1-0 选方块 ｜ 本游戏为石某某制作';
 }
 document.addEventListener('pointerlockchange', () => {
   locked = (document.pointerLockElement === renderer.domElement);
@@ -618,6 +686,103 @@ addEventListener('mouseup', (e) => {
   }
 });
 addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ========= 手机触屏控制 =========
+let joyX = 0, joyY = 0;   // 虚拟摇杆输入（-1~1，Y 向上为前进）
+if (isTouch) {
+  // --- 虚拟摇杆（左下） ---
+  const joyBase = document.getElementById('joyBase');
+  const joyKnob = document.getElementById('joyKnob');
+  const JOY_R = 44;
+  let joyId = null, joyCX = 0, joyCY = 0;
+  function joyMove(t) {
+    let dx = t.clientX - joyCX, dy = t.clientY - joyCY;
+    const d = Math.hypot(dx, dy);
+    if (d > JOY_R) { dx = dx / d * JOY_R; dy = dy / d * JOY_R; }
+    joyKnob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+    joyX = dx / JOY_R; joyY = -dy / JOY_R;
+  }
+  function joyReset() {
+    joyId = null; joyX = 0; joyY = 0;
+    joyKnob.style.transform = 'translate(-50%, -50%)';
+  }
+  joyBase.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    joyId = t.identifier;
+    const r = joyBase.getBoundingClientRect();
+    joyCX = r.left + r.width / 2; joyCY = r.top + r.height / 2;
+    joyMove(t);
+  }, { passive: false });
+  joyBase.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) if (t.identifier === joyId) joyMove(t);
+  }, { passive: false });
+  joyBase.addEventListener('touchend', (e) => {
+    for (const t of e.changedTouches) if (t.identifier === joyId) joyReset();
+  });
+  joyBase.addEventListener('touchcancel', joyReset);
+  // 鼠标支持（电脑用 ?touch=1 测试）
+  let joyMouse = false;
+  joyBase.addEventListener('mousedown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const r = joyBase.getBoundingClientRect();
+    joyCX = r.left + r.width / 2; joyCY = r.top + r.height / 2;
+    joyMouse = true;
+    joyMove(e);
+  });
+  document.addEventListener('mousemove', (e) => { if (joyMouse) joyMove(e); });
+  document.addEventListener('mouseup', () => { if (joyMouse) { joyMouse = false; joyReset(); } });
+
+  // --- 动作按键（长按"跳" = 连续跳跃 / 水中上浮） ---
+  const bindBtn = (id, down, up) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); down(); }, { passive: false });
+    if (up) el.addEventListener('touchend', (e) => { e.preventDefault(); up(); });
+    // 鼠标支持（电脑用 ?touch=1 测试）
+    el.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); down(); });
+    if (up) {
+      el.addEventListener('mouseup', (e) => { e.preventDefault(); e.stopPropagation(); up(); });
+      el.addEventListener('mouseleave', () => up());
+    }
+  };
+  bindBtn('btnJump',  () => { keys['Space'] = true; }, () => { keys['Space'] = false; });
+  bindBtn('btnBreak', () => breakBlock());
+  bindBtn('btnPlace', () => placeBlock());
+
+  // --- 屏幕拖动转视角（非UI区域任意手指）+ 轻点破坏 ---
+  let lookId = null, lx = 0, ly = 0, lookDist = 0, lookT0 = 0;
+  renderer.domElement.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (!loadEl.classList.contains('hidden')) return;                       // 加载页未结束
+    if (!overlay.classList.contains('hidden')) { enableDragLook(); return; } // 首次点按进入游戏
+    if (lookId !== null) return;
+    const t = e.changedTouches[0];
+    lookId = t.identifier; lx = t.clientX; ly = t.clientY;
+    lookDist = 0; lookT0 = performance.now();
+  }, { passive: false });
+  renderer.domElement.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier !== lookId) continue;
+      const dx = t.clientX - lx, dy = t.clientY - ly;
+      lx = t.clientX; ly = t.clientY;
+      lookDist += Math.abs(dx) + Math.abs(dy);
+      yaw -= dx * 0.0055;
+      pitch = Math.max(-1.5, Math.min(1.5, pitch - dy * 0.0055));
+    }
+  }, { passive: false });
+  const lookEnd = (e) => {
+    for (const t of e.changedTouches) {
+      if (t.identifier !== lookId) continue;
+      lookId = null;
+      // 轻点（时间短、几乎没移动）→ 破坏准星所指方块
+      if (performance.now() - lookT0 < 250 && lookDist < 12) breakBlock();
+    }
+  };
+  renderer.domElement.addEventListener('touchend', lookEnd);
+  renderer.domElement.addEventListener('touchcancel', lookEnd);
+}
 
 function getTarget() {
   const dir = new THREE.Vector3();
@@ -844,12 +1009,17 @@ function update(dt) {
   if (keys['KeyS']) iz -= 1;
   if (keys['KeyD']) ix += 1;
   if (keys['KeyA']) ix -= 1;
+  if (isTouch) { ix += joyX; iz += joyY; }   // 手机摇杆输入
   const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
   const rx = Math.cos(yaw), rz = -Math.sin(yaw);
   let vx = fx * iz + rx * ix;
   let vz = fz * iz + rz * ix;
   const len = Math.hypot(vx, vz);
   if (len > 0) { vx = vx / len * speed; vz = vz / len * speed; }
+  if (isTouch) {
+    const m = Math.min(1, Math.hypot(joyX, joyY));  // 摇杆幅度决定移动速度（模拟量）
+    vx *= m; vz *= m;
+  }
   player.vel.x = vx;
   player.vel.z = vz;
 
