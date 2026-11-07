@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>方块世界</title>
+<title>方块世界 2.0</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #87ceeb; font-family: "Microsoft YaHei", sans-serif; overflow: hidden; }
@@ -32,8 +32,85 @@
   #hint {
     position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
     color: #fff; font-size: 13px; text-shadow: 1px 1px 0 #000;
-    background: rgba(0,0,0,0.35); padding: 6px 14px; border-radius: 6px; z-index: 10;
+    background: rgba(0,0,0,0.45); padding: 6px 16px; border-radius: 6px; z-index: 40;
+    cursor: pointer; user-select: none; border: 1px solid rgba(255,255,255,0.22);
   }
+  #hint:hover { background: rgba(60,120,200,0.65); }
+  /* 新手操作指南：全屏覆盖层 */
+  #guide {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    align-items: center; justify-content: center;
+    background: rgba(6,10,16,0.96);
+  }
+  #guide.show { display: flex; }
+  #guideBox {
+    width: min(660px, 88vw); max-height: 84vh; overflow: auto;
+    background: rgba(18,26,38,0.98);
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 14px;
+    padding: 24px 28px; color: #e9f2e9;
+  }
+  #guideBox h2 { margin: 0 0 6px; font-size: 19px; letter-spacing: 1px; }
+  #guideSub { margin: 0 0 16px; font-size: 12px; color: #9fb4c8; }
+  #guideList { margin: 0 0 20px; padding: 0; list-style: none; font-size: 14px; line-height: 2.1; }
+  #guideList li { border-bottom: 1px dashed rgba(255,255,255,0.10); padding-left: 6px; }
+  #guideList li.gHead {
+    border-bottom: none; margin-top: 12px; padding-left: 0;
+    font-weight: 700; letter-spacing: 1px; color: #7fb6ff;
+  }
+  #guideList li.gHead.cur { color: #8ce06a; }
+  #guideList li.dim { opacity: 0.55; font-size: 13px; }
+  #guideClose {
+    display: block; margin: 0 auto; padding: 9px 34px; font-size: 15px;
+    border-radius: 9px; border: 1px solid rgba(255,255,255,0.35);
+    background: rgba(70,150,240,0.75); color: #fff; cursor: pointer;
+  }
+  #guideClose:hover { background: rgba(70,150,240,0.95); }
+  /* 操作方式切换（电脑 / 手机） */
+  #devRow {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 12px; color: #9fb4c8; margin: 10px 0 2px;
+  }
+  .tiny {
+    padding: 3px 10px; font-size: 12px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.12);
+    color: #dbe7f3; cursor: pointer;
+  }
+  .tiny:hover { background: rgba(70,150,240,0.6); }
+  /* 联机房间面板 */
+  #roomPanel {
+    position: fixed; inset: 0; z-index: 45; display: none;
+    align-items: center; justify-content: center; background: rgba(6,10,16,0.96);
+  }
+  #roomPanel.show { display: flex; }
+  #roomBox {
+    width: min(520px, 90vw); max-height: 86vh; overflow: auto;
+    background: rgba(18,26,38,0.98); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 14px; padding: 22px 24px; color: #e9f2e9;
+  }
+  #roomBox h2 { margin: 0 0 6px; font-size: 18px; }
+  #roomSub { margin: 0 0 14px; font-size: 12px; color: #9fb4c8; }
+  #roomGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 16px; }
+  .roomCard {
+    padding: 16px 0; text-align: center; font-size: 17px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.22); background: rgba(60,110,170,0.35);
+    cursor: pointer; user-select: none;
+  }
+  .roomCard:hover { background: rgba(70,150,240,0.78); border-color: #fff; }
+  #roomPriv { display: flex; gap: 8px; margin-bottom: 8px; }
+  #roomPriv input { flex: 1; }
+  #btnPrivNew {
+    display: block; width: 100%; padding: 9px 0; margin-bottom: 10px; font-size: 13px;
+    border-radius: 9px; border: 1px solid rgba(255,255,255,0.24);
+    background: rgba(255,255,255,0.10); color: #dbe7f3; cursor: pointer;
+  }
+  #btnPrivNew:hover { background: rgba(70,150,240,0.6); }
+  #roomMsg { min-height: 18px; font-size: 12px; color: #ffd47a; margin-bottom: 8px; text-align: center; }
+  #roomClose {
+    display: block; margin: 0 auto; padding: 8px 30px; font-size: 14px; border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.14);
+    color: #fff; cursor: pointer;
+  }
+  #roomClose:hover { background: rgba(255,255,255,0.26); }
   #time {
     position: fixed; top: 14px; left: 16px; color: #fff; font-size: 14px;
     text-shadow: 1px 1px 0 #000; background: rgba(0,0,0,0.35);
@@ -65,14 +142,120 @@
     background: rgba(0,0,0,0.4); z-index: 10;
   }
   #overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.6); color: #fff;
-    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    position: fixed; inset: 0; background: #000; color: #fff;
+    display: flex; align-items: center; justify-content: safe center; flex-direction: column;
     z-index: 20; text-align: center; pointer-events: none;
+    overflow-y: auto; padding: 20px 12px; box-sizing: border-box;
   }
   #overlay h1 { font-size: 42px; margin-bottom: 8px; text-shadow: 2px 2px 0 #000; }
   #overlay .author { font-size: 18px; opacity: 0.92; text-shadow: 1px 1px 0 #000; margin-top: 14px; }
   #overlay .tip { font-size: 14px; opacity: 0.7; margin-top: 24px; }
+  /* 小屏（手机横屏）压缩间距，保证按钮不被挤出屏幕 */
+  @media (max-height: 500px) {
+    #overlay h1 { font-size: 30px; margin-bottom: 4px; }
+    #overlay .author { font-size: 14px; margin-top: 6px; }
+    #overlay .tip { margin-top: 10px; }
+    #menu { margin-top: 12px; gap: 7px; }
+    #menu input { padding: 8px 12px; font-size: 14px; }
+    #menu button { padding: 9px 6px; font-size: 14px; }
+    #colorTip { display: none; }
+  }
+  /* 主页面左右两翼：左=更新公告，右=聊天（白底深字，和纯黑背景形成对比） */
+  #sideLeft, #sideRight {
+    position: fixed; top: 50%; transform: translateY(-50%); width: 252px;
+    z-index: 22; pointer-events: auto; text-align: left;
+    background: #ffffff; color: #1b2430; border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 12px; padding: 12px; font-size: 12.5px;
+    max-height: 72vh; display: flex; flex-direction: column; gap: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  }
+  #sideLeft { left: 18px; }
+  #sideRight { right: 18px; }
+  .sideTitle { font-size: 13px; font-weight: 700; letter-spacing: 1px; color: #1565c0; }
+  #changelog { overflow-y: auto; line-height: 1.75; color: #2a3442; }
+  #changelog .ver { color: #0b8a3e; font-weight: 700; margin-top: 6px; }
+  #changelog div { padding-left: 2px; }
+  #chatLog {
+    flex: 1; min-height: 120px; max-height: 42vh; overflow-y: auto;
+    line-height: 1.7; color: #2a3442;
+    border-top: 1px solid rgba(0,0,0,0.12); border-bottom: 1px solid rgba(0,0,0,0.12); padding: 6px 0;
+  }
+  #chatLog .who { color: #0b8a3e; font-weight: 700; }
+  #chatRow { display: flex; gap: 6px; }
+  #chatInput {
+    flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px; font-size: 12.5px;
+    border: 1px solid #c7d2e0; background: #f3f6fa; color: #1b2430; outline: none; font-family: inherit;
+  }
+  #chatRow button {
+    padding: 7px 9px; border-radius: 8px; font-size: 12.5px; cursor: pointer;
+    border: 1px solid #c7d2e0; background: #e8eef7; color: #1b2430; font-family: inherit;
+  }
+  #chatMic.rec { background: #dc4646; color: #fff; border-color: #dc4646; }
+  /* 窄屏：两翼收成两个按钮，点开后全屏显示 */
+  #sideBtnLeft, #sideBtnRight {
+    display: none; position: fixed; top: 12px; z-index: 24;
+    padding: 8px 14px; border-radius: 10px; font-size: 13px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.16);
+    color: #fff; font-family: inherit;
+  }
+  #sideBtnLeft { left: 12px; }
+  #sideBtnRight { right: 12px; }
+  .sideClose { display: none; }
+  .sideHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sideClose {
+    padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    border: 1px solid #c7d2e0; background: #e8eef7; color: #1b2430; font-family: inherit;
+  }
+  @media (max-width: 1080px) {
+    #sideLeft, #sideRight { display: none; }
+    #sideBtnLeft, #sideBtnRight { display: block; }
+    #sideLeft.open, #sideRight.open {
+      display: flex; inset: 0; top: 0; left: 0; right: 0; bottom: 0;
+      transform: none; width: auto; max-height: none; border: none; border-radius: 0;
+      z-index: 46; padding: 16px; font-size: 14px; overflow-y: auto;
+    }
+    #sideLeft.open .sideClose, #sideRight.open .sideClose { display: block; }
+    #sideLeft.open #changelog, #sideRight.open #chatLog { max-height: none; }
+    #sideRight.open #chatLog { flex: 1; }
+  }
+  @media (max-width: 760px) { #hint { top: 56px; } }   /* 窄屏时避开顶部两个按钮 */
+  #overlay.paused #menu, #overlay.paused .author { display: none; }
+  #overlay.paused h1 { font-size: 34px; }
   .hidden { display: none !important; }
+  /* ===== 开始菜单（姓名 + 联机） ===== */
+  #menu {
+    pointer-events: auto; display: flex; flex-direction: column; gap: 10px;
+    width: min(340px, 86vw); margin-top: 22px;
+  }
+  #menu input {
+    width: 100%; padding: 11px 14px; border-radius: 10px; box-sizing: border-box;
+    border: 2px solid rgba(255,255,255,0.35); background: rgba(0,0,0,0.45);
+    color: #fff; font-size: 15px; font-family: inherit; text-align: center; outline: none;
+  }
+  #menu input::placeholder { color: rgba(255,255,255,0.45); }
+  #menu .row { display: flex; gap: 10px; }
+  #menu button {
+    flex: 1; padding: 11px 8px; border-radius: 10px; cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.16);
+    color: #fff; font-size: 15px; font-family: inherit; font-weight: 600;
+  }
+  #menu button:active { background: rgba(255,255,255,0.34); }
+  #menu button.primary { background: rgba(106,191,58,0.8); border-color: rgba(106,191,58,0.95); }
+  #menu button:disabled { opacity: 0.45; }
+  #menuMsg { min-height: 18px; font-size: 13px; color: #ffe08a; text-shadow: 1px 1px 0 #000; }
+  #colorRow { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .cdot {
+    width: 30px; height: 30px; border-radius: 50% 50% 50% 50%;
+    border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .cdot.on { border-color: #fff; transform: scale(1.12); box-shadow: 0 0 10px rgba(255,255,255,0.9); }
+  #colorTip { font-size: 13px; opacity: 0.75; margin-bottom: -4px; }
+  #netInfo {
+    position: fixed; top: 46px; left: 50%; transform: translateX(-50%);
+    color: #fff; font-size: 13px; text-shadow: 1px 1px 0 #000;
+    background: rgba(0,0,0,0.4); padding: 5px 14px; border-radius: 6px;
+    z-index: 10; pointer-events: none;
+  }
   /* ===== 手机触屏控制（仅触屏设备显示） ===== */
   html, body { touch-action: none; overscroll-behavior: none; }
   body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -108,6 +291,28 @@
   #btnBreak { grid-area: break; }
   #btnPlace { grid-area: place; }
   #btnJump  { grid-area: jump; font-size: 17px; }
+  #btnView {
+    position: fixed; right: 30px; bottom: 250px;
+    width: 56px; height: 56px; font-size: 15px;
+  }
+  #btnFly {
+    position: fixed; right: 30px; bottom: 318px;
+    width: 56px; height: 56px; font-size: 15px;
+  }
+  #btnFly.on { background: rgba(90,220,140,0.55); border-color: rgba(190,255,210,0.85); }
+  #btnDown {
+    position: fixed; right: 100px; bottom: 250px;
+    width: 56px; height: 56px; font-size: 15px; display: none;
+  }
+  body.fly #btnDown { display: flex; }
+  /* 飞行状态提示条 */
+  #flyTag {
+    position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+    padding: 3px 10px; border-radius: 8px; font-size: 12px;
+    background: rgba(90,220,140,0.72); color: #fff; text-shadow: 1px 1px 0 #000;
+    z-index: 11; display: none; pointer-events: none;
+  }
+  body.fly #flyTag { display: block; }
   /* 手机：缩小快捷栏避免遮挡，且可点按切换方块 */
   body.touch #hud { bottom: 12px; gap: 3px; }
   body.touch .slot { width: 30px; height: 30px; border-radius: 5px; pointer-events: auto; }
@@ -116,7 +321,16 @@
 </style>
 </head>
 <body>
-  <div id="hint">WASD 移动 ｜ 空格 跳跃 ｜ 鼠标视角 ｜ 左键破坏 ｜ 右键放置 ｜ 1-0 选方块 ｜ ESC 暂停 ｜ 本游戏为石某某制作</div>
+  <div id="hint">新手操作指南</div>
+  <div id="flyTag"></div>
+  <div id="guide">
+    <div id="guideBox">
+      <h2>新手操作指南</h2>
+      <p id="guideSub"></p>
+      <ul id="guideList"></ul>
+      <button id="guideClose">退出</button>
+    </div>
+  </div>
   <div id="time"></div>
   <div id="coords"></div>
   <canvas id="minimap" width="150" height="150"></canvas>
@@ -129,20 +343,91 @@
       <div class="tbtn" id="btnPlace">放</div>
       <div class="tbtn" id="btnJump">跳</div>
     </div>
+    <div class="tbtn" id="btnView">看</div>
+    <div class="tbtn" id="btnFly">飞</div>
+    <div class="tbtn" id="btnDown">降</div>
   </div>
   <div id="overlay">
-    <h1>方块世界</h1>
+    <h1>方块世界 2.0</h1>
     <div class="author">本游戏为石某某制作</div>
-    <div class="tip">点击开始游戏</div>
+    <div id="menu">
+      <input id="nameInput" maxlength="8" placeholder="输入你的名字（最多8字）" autocomplete="off">
+      <div id="colorTip">选择你的小球颜色</div>
+      <div id="colorRow"></div>
+      <div id="devRow">
+        <span id="devTip"></span>
+        <button id="btnSwitchDev" class="tiny">切换</button>
+      </div>
+      <div class="row">
+        <button id="btnSolo" class="primary">单人开始</button>
+        <button id="btnRooms">联机房间</button>
+      </div>
+      <div id="menuMsg"></div>
+    </div>
+    <div class="tip">点下方按钮开始游戏</div>
   </div>
+  <!-- 窄屏（手机等）时，两翼收成这两个按钮，点开后全屏显示 -->
+  <button id="sideBtnLeft">更新公告</button>
+  <button id="sideBtnRight">聊天</button>
+
+  <!-- 左翼：版本更新公告 -->
+  <div id="sideLeft">
+    <div class="sideHead">
+      <span class="sideTitle">更新公告</span>
+      <button class="sideClose" data-side="sideLeft">关闭</button>
+    </div>
+    <div id="changelog">
+      <div class="ver">方块世界 2.0</div>
+      <div>· 地图扩大到 1000×1000，按区块按需加载</div>
+      <div>· 新增村庄、地下洞穴与煤 / 铁 / 金矿</div>
+      <div>· 联机房间 01-10，另支持私密房间码</div>
+      <div>· 自定义名字，每人小球颜色自选</div>
+      <div>· 飞行模式（电脑 F / 手机「飞」）</div>
+      <div>· 第三人称看自己（按住 P / 「看」）</div>
+      <div>· 电脑键鼠与手机触屏可自由切换</div>
+      <div>· 手机操作改为按钮式，点击不再误挖方块</div>
+      <div class="ver">最新</div>
+      <div>· 新增本页面：更新公告 + 联机聊天</div>
+    </div>
+  </div>
+
+  <!-- 右翼：聊天（联机房间内可用，支持键盘与语音输入） -->
+  <div id="sideRight">
+    <div class="sideHead">
+      <span class="sideTitle">聊天</span>
+      <button class="sideClose" data-side="sideRight">关闭</button>
+    </div>
+    <div id="chatLog"><div style="opacity:.6">进入联机房间后可以聊天</div></div>
+    <div id="chatRow">
+      <input id="chatInput" maxlength="60" placeholder="发消息…" autocomplete="off">
+      <button id="chatMic">语音</button>
+      <button id="chatSend">发送</button>
+    </div>
+  </div>
+  <div id="roomPanel">
+    <div id="roomBox">
+      <h2>联机房间</h2>
+      <p id="roomSub">点击房间即可进入；第一个进入的人自动成为房主 · 每个房间最多 5 人</p>
+      <div id="roomGrid"></div>
+      <div id="roomPriv">
+        <input id="privCodeInput" maxlength="6" placeholder="私密房间码（数字）" autocomplete="off">
+        <button id="btnPrivJoin">进入</button>
+      </div>
+      <button id="btnPrivNew">创建私密房间（随机生成房间码）</button>
+      <div id="roomMsg"></div>
+      <button id="roomClose">返回</button>
+    </div>
+  </div>
+  <div id="netInfo" class="hidden"></div>
   <div id="loading">
-    <h1>方块世界</h1>
+    <h1>方块世界 2.0</h1>
     <div class="bar"><div class="fill" id="loadFill"></div></div>
-    <div class="pct" id="loadPct">加载中... 0%</div>
+    <div class="pct" id="loadPct">正在加载中，请稍后等待 0%</div>
     <div class="author">本游戏为石某某制作</div>
   </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 // ========= 基础场景 =========
 const scene = new THREE.Scene();
@@ -279,12 +564,17 @@ const mat = {
   torchStick:new THREE.MeshLambertMaterial({ color: 0x6b4f2a }), // 火把木柄
   torchFlame:new THREE.MeshBasicMaterial({ color: 0xffcc33, fog: false }), // 火把火焰（自发光）
   plank:     new THREE.MeshLambertMaterial({ color: 0xb89060 }), // 木板：浅棕
+  coalOre:   new THREE.MeshLambertMaterial({ color: 0x4a4a4a }), // 煤矿
+  ironOre:   new THREE.MeshLambertMaterial({ color: 0x9a8a7a }), // 铁矿
+  goldOre:   new THREE.MeshLambertMaterial({ color: 0xa89a60 }), // 金矿
   water:     new THREE.MeshLambertMaterial({ color: 0x3a7cdb, transparent: true, opacity: 0.65 }), // 水：半透明蓝
 };
 // 草方块：顶亮绿、底泥、四侧草边
 const grassMat = [mat.grassSide, mat.grassSide, mat.grassTop, mat.dirt, mat.grassSide, mat.grassSide];
 
-const BLOCK_TYPES = ['grass', 'dirt', 'stone', 'wood', 'leaves', 'sand', 'bedrock', 'pillow', 'torch', 'plank', 'water'];
+// 单色材质（不使用贴图，性能优先）
+
+const BLOCK_TYPES = ['grass', 'dirt', 'stone', 'wood', 'leaves', 'sand', 'bedrock', 'pillow', 'torch', 'plank', 'water', 'coal_ore', 'iron_ore', 'gold_ore'];
 const BLOCK_MAT = {
   grass: grassMat,
   dirt:  mat.dirt,
@@ -295,12 +585,16 @@ const BLOCK_MAT = {
   bedrock: mat.bedrock,
   plank: mat.plank,
   water: mat.water,
+  coal_ore: mat.coalOre,
+  iron_ore: mat.ironOre,
+  gold_ore: mat.goldOre,
 };
 // 用于 HUD 色块的代表色
 const BLOCK_COLOR = {
   grass: '#6abf3a', dirt: '#8b5a2b', stone: '#8a8a8a',
   wood: '#6b4f2a', leaves: '#4a8a3a', sand: '#e0d090', bedrock: '#333333',
   pillow: '#ff8a8a', torch: '#ffcc33', plank: '#b89060', water: '#3a7cdb',
+  coal_ore: '#2e2e2e', iron_ore: '#c98a5a', gold_ore: '#e8c040',
 };
 // 半格方块（碰撞高度 0.5）和无碰撞方块（可穿过）
 const HALF_BLOCKS = new Set(['pillow']);
@@ -308,122 +602,310 @@ const NO_COLLIDE  = new Set(['torch', 'water']);
 
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 
-// ========= 世界数据（体素 Map） =========
-// key = "x,y,z"，方块 (x,y,z) 占据 [x,x+1]×[y,y+1]×[z,z+1]
-const world = new Map();
-const kkey = (x, y, z) => x + ',' + y + ',' + z;
-const isVoxel = (x, y, z) => world.has(kkey(x, y, z));
-function setVoxel(x, y, z, t) { world.set(kkey(x, y, z), t); }
-function delVoxel(x, y, z) { world.delete(kkey(x, y, z)); }
-function topYAt(x, z) { for (let y = 60; y >= 0; y--) if (isVoxel(x, y, z)) return y; return -1; }
+// ========= 世界数据（按区块存 Uint8Array，只有已加载的区块才存在） =========
+const CHUNK = 50;                               // 每个区块 50×50（块越小、一次渲染的方块越少，越流畅）
+const CHUNKS_PER_SIDE = 20;                     // 每边 20 块 → 20×20 = 400 个区块
+const WORLD_SIZE = CHUNK * CHUNKS_PER_SIDE;     // 世界 1000×1000
+const CHUNK_MAX_Y = 48;                         // 单个区块的高度上限
+const LOAD_RADIUS = 1;                          // 加载脚下区块 + 周围一圈（3×3）
 
-// ========= 地形生成（三区域：山脉 / 草坪 / 水域） =========
-const WORLD_SIZE = 60;
-const WATER_LEVEL = 6;       // 水面高度
-const MOUNTAIN_END = 20;     // x < 20: 山脉区
-const GRASS_END = 40;        // 20 ≤ x < 40: 草坪区; x ≥ 40: 水域区
-function generateWorld() {
-  const BEDROCK_AND_STONE = 5;
-  const DIRT_THICKNESS = 2;
+const BID = {}, BTP = [null];                   // 方块名 ↔ 数字 id
+BLOCK_TYPES.forEach((t, i) => { BID[t] = i + 1; BTP[i + 1] = t; });
 
-  for (let x = 0; x < WORLD_SIZE; x++) {
-    for (let z = 0; z < WORLD_SIZE; z++) {
-      let h, topBlock;
-      if (x < MOUNTAIN_END) {
-        // ===== 山脉区：高耸起伏 =====
-        const big = Math.round(10 * Math.sin(x * 0.3) * Math.cos(z * 0.3));
-        const small = Math.round(4 * Math.sin(x * 0.7 + z * 0.5));
-        h = 14 + big + small;
-        if (h < 7) h = 7;
-        topBlock = 'grass';
-      } else if (x < GRASS_END) {
-        // ===== 草坪区：平缓低洼 =====
-        const ripple = Math.round(2 * Math.sin(x * 0.25) * Math.cos(z * 0.25));
-        h = 8 + ripple;
-        if (h < 6) h = 6;
-        topBlock = 'grass';
-      } else {
-        // ===== 水域区：低洼地，水底为沙 =====
-        const ripple = Math.round(1 * Math.sin(x * 0.2) * Math.cos(z * 0.2));
-        h = 3 + ripple;
-        if (h < 2) h = 2;
-        topBlock = 'sand';
-      }
+const chunks = new Map();   // "cx,cz" -> { arr: Uint8Array, group: THREE.Group, maxY }
 
-      // 生成地形方块（基岩→石头→泥土→表层）
-      for (let y = 0; y <= h; y++) {
-        let t;
-        if (y === 0) t = 'bedrock';
-        else if (y === h) t = topBlock;
-        else if (y >= h - DIRT_THICKNESS) t = (x >= GRASS_END) ? 'sand' : 'dirt';
-        else if (y < BEDROCK_AND_STONE) t = 'stone';
-        else t = 'stone';
-        setVoxel(x, y, z, t);
-      }
-
-      // 水域区：地形上方填充水到水面高度
-      if (x >= GRASS_END && h < WATER_LEVEL) {
-        for (let y = h + 1; y <= WATER_LEVEL; y++) {
-          setVoxel(x, y, z, 'water');
-        }
-      }
-
-      // 边缘沙地（非水域区）
-      if ((x === 0 || z === 0 || x === WORLD_SIZE - 1 || z === WORLD_SIZE - 1) && x < GRASS_END) {
-        setVoxel(x, h, z, 'sand');
-      }
-    }
-  }
-  // 边境之墙（基岩，不可破坏，生物和玩家均无法穿过）
-  const WALL_H = 30;
-  for (let i = 0; i < WORLD_SIZE; i++) {
-    for (let y = 0; y <= WALL_H; y++) {
-      setVoxel(0, y, i, 'bedrock');
-      setVoxel(WORLD_SIZE - 1, y, i, 'bedrock');
-      setVoxel(i, y, 0, 'bedrock');
-      setVoxel(i, y, WORLD_SIZE - 1, 'bedrock');
-    }
-  }
-  // 树木：草坪区 + 山脉区（水域不长树）
-  plantTree(25, topYAt(25, 20) + 1, 20);
-  plantTree(30, topYAt(30, 35) + 1, 35);
-  plantTree(22, topYAt(22, 10) + 1, 10);
-  plantTree(35, topYAt(35, 28) + 1, 28);
-  plantTree(28, topYAt(28, 45) + 1, 45);
-  plantTree(33, topYAt(33, 15) + 1, 15);
-  plantTree(26, topYAt(26, 50) + 1, 50);
-  plantTree(38, topYAt(38, 40) + 1, 40);
-  plantTree(5,  topYAt(5, 30)  + 1, 30);
-  plantTree(12, topYAt(12, 5)  + 1, 5);
-  plantTree(8,  topYAt(8, 45)  + 1, 45);
-  plantTree(15, topYAt(15, 50) + 1, 50);
+function getBlock(x, y, z) {
+  if (y < 0 || y >= CHUNK_MAX_Y) return null;
+  if (x < 0 || z < 0 || x >= WORLD_SIZE || z >= WORLD_SIZE) return null;
+  const c = chunks.get(Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK));
+  if (!c) return null;
+  const id = c.arr[(y * CHUNK + (z % CHUNK)) * CHUNK + (x % CHUNK)];
+  return id ? BTP[id] : null;
 }
-function plantTree(x, baseY, z) {
-  for (let i = 0; i < 4; i++) setVoxel(x, baseY + i, z, 'wood');
+function setBlock(x, y, z, t) {
+  if (y < 0 || y >= CHUNK_MAX_Y) return;
+  if (x < 0 || z < 0 || x >= WORLD_SIZE || z >= WORLD_SIZE) return;
+  const c = chunks.get(Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK));
+  if (!c) return;
+  c.arr[(y * CHUNK + (z % CHUNK)) * CHUNK + (x % CHUNK)] = BID[t] || 0;
+  if (y > c.maxY) c.maxY = y;
+}
+function delBlock(x, y, z) {
+  if (y < 0 || y >= CHUNK_MAX_Y) return;
+  if (x < 0 || z < 0 || x >= WORLD_SIZE || z >= WORLD_SIZE) return;
+  const c = chunks.get(Math.floor(x / CHUNK) + ',' + Math.floor(z / CHUNK));
+  if (!c) return;
+  c.arr[(y * CHUNK + (z % CHUNK)) * CHUNK + (x % CHUNK)] = 0;
+}
+
+const isVoxel = (x, y, z) => getBlock(x, y, z) !== null;
+const setVoxel = (x, y, z, t) => setBlock(x, y, z, t);
+const delVoxel = (x, y, z) => delBlock(x, y, z);
+function topYAt(x, z) { for (let y = CHUNK_MAX_Y - 1; y >= 0; y--) if (getBlock(x, y, z)) return y; return -1; }
+
+// ========= 地形生成（三区域：山脉 / 草坪 / 水域，按区块按需生成） =========
+const WATER_LEVEL = 6;                                  // 水面高度
+const MOUNTAIN_END = Math.round(WORLD_SIZE / 3);        // 前 1/3：山脉区
+const GRASS_END = Math.round(WORLD_SIZE * 2 / 3);       // 中间 1/3：草坪区；之后水域区
+
+// 区块内确定性伪随机（同一区块每次生成结果一致）
+function chunkRand(cx, cz, i) {
+  let h = (cx * 73856093) ^ (cz * 19349663) ^ (i * 83492791);
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+// 按全局坐标算地表高度
+function heightAt(x, z) {
+  if (x < MOUNTAIN_END) {
+    const big = Math.round(10 * Math.sin(x * 0.018) * Math.cos(z * 0.018));
+    const small = Math.round(4 * Math.sin(x * 0.042 + z * 0.03));
+    return Math.max(7, 14 + big + small);
+  } else if (x < GRASS_END) {
+    const ripple = Math.round(2 * Math.sin(x * 0.015) * Math.cos(z * 0.015));
+    return Math.max(6, 8 + ripple);
+  } else {
+    const ripple = Math.round(1 * Math.sin(x * 0.012) * Math.cos(z * 0.012));
+    return Math.max(2, 3 + ripple);
+  }
+}
+
+// 地下洞穴：3D 噪声等值面，形成纵横交错的隧道与空腔
+function isCave(x, y, z, surfaceH) {
+  if (y < 2) return false;                  // 最底层不动
+  if (y > surfaceH - 4) return false;       // 留 3 层地壳，避免地表塌陷
+  const n = Math.sin(x * 0.07) * Math.sin(z * 0.07) * 1.6
+          + Math.sin(x * 0.12 + y * 0.10)
+          + Math.sin(z * 0.12 + y * 0.09);
+  return Math.abs(n) < (y < 12 ? 0.15 : 0.12);   // 越深洞越大
+}
+// 3D 伪随机
+function hash3(x, y, z) {
+  let h = x * 374761393 + y * 668265263 + z * 1274126177;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+// 矿石：按 3 格大小成簇生成，越深越值钱
+function oreAt(x, y, z, surfaceH) {
+  if (surfaceH - y < 4) return null;              // 太靠近地表没有矿
+  const clx = Math.floor(x / 3), cly = Math.floor(y / 3), clz = Math.floor(z / 3);
+  if (hash3(clx, cly, clz) > 0.05) return null;   // 约 5% 的小格有矿
+  if (hash3(x, y, z) > 0.7) return null;          // 簇内稀疏一些
+  const r = hash3(x + 7, y + 3, z + 11);
+  if (y < 6) return r < 0.35 ? 'gold_ore' : 'iron_ore';    // 最深处：金 / 铁
+  if (y < 12) return r < 0.3 ? 'iron_ore' : 'coal_ore';    // 中层：铁 / 煤
+  return 'coal_ore';                                       // 浅层：煤
+}
+
+// 在区块内种一棵树（超出区块的部分忽略，简化处理）
+function plantTreeInChunk(arr, cx, cz, x, baseY, z) {
+  const x0 = cx * CHUNK, z0 = cz * CHUNK;
+  const put = (px, py, pz, t) => {
+    const lx = px - x0, lz = pz - z0;
+    if (lx < 0 || lz < 0 || lx >= CHUNK || lz >= CHUNK) return;
+    if (py < 0 || py >= CHUNK_MAX_Y) return;
+    const idx = (py * CHUNK + lz) * CHUNK + lx;
+    if (!arr[idx]) arr[idx] = BID[t];
+  };
+  for (let i = 0; i < 4; i++) put(x, baseY + i, z, 'wood');
   const top = baseY + 3;
   for (let dx = -2; dx <= 2; dx++)
     for (let dy = -1; dy <= 2; dy++)
       for (let dz = -2; dz <= 2; dz++) {
         if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 4) continue;
-        const lx = x + dx, ly = top + dy, lz = z + dz;
-        if (!isVoxel(lx, ly, lz)) setVoxel(lx, ly, lz, 'leaves');
+        put(x + dx, top + dy, z + dz, 'leaves');
       }
 }
-generateWorld();
 
-// ========= 渲染：InstancedMesh（只渲染可见方块） =========
-let instancedGroups = [];
-let torchLights = []; // 火把点光源，rebuild 时清除重建
-// 判断方块是否为实心（非实心方块如火把/水/抱枕不遮挡相邻方块的渲染）
+// ========= 村庄（固定坐标的小村落，只在覆盖它的区块里生成） =========
+const VILLAGE_X = 485, VILLAGE_Z = 515;   // 村庄中心（草坪区内，紧邻出生点）
+const VILLAGE_R = 22;                      // 村庄半径
+
+function buildVillageInChunk(c, cx, cz) {
+  const arr = c.arr;
+  const x0 = cx * CHUNK, z0 = cz * CHUNK;
+  const put = (px, py, pz, t) => {
+    const lx = px - x0, lz = pz - z0;
+    if (lx < 0 || lz < 0 || lx >= CHUNK || lz >= CHUNK) return;
+    if (py < 0 || py >= CHUNK_MAX_Y) return;
+    arr[(py * CHUNK + lz) * CHUNK + lx] = BID[t];
+    if (py > c.maxY) c.maxY = py;
+  };
+  const clear = (px, py, pz) => {
+    const lx = px - x0, lz = pz - z0;
+    if (lx < 0 || lz < 0 || lx >= CHUNK || lz >= CHUNK) return;
+    if (py < 0 || py >= CHUNK_MAX_Y) return;
+    arr[(py * CHUNK + lz) * CHUNK + lx] = 0;
+  };
+
+  // 圆形广场：草皮上铺木板
+  for (let dx = -VILLAGE_R; dx <= VILLAGE_R; dx++)
+    for (let dz = -VILLAGE_R; dz <= VILLAGE_R; dz++) {
+      if (dx * dx + dz * dz > VILLAGE_R * VILLAGE_R) continue;
+      const x = VILLAGE_X + dx, z = VILLAGE_Z + dz;
+      put(x, heightAt(x, z), z, 'plank');
+    }
+
+  // 五栋小木屋
+  const houses = [[-14, -8], [9, -12], [-12, 10], [10, 9], [0, -19]];
+  houses.forEach(([hx, hz]) => {
+    const bx = VILLAGE_X + hx, bz = VILLAGE_Z + hz;
+    const w = 5, d = 5;
+    const h = heightAt(bx, bz) + 1;          // 地板所在层
+
+    // 平整宅基地：清掉树和杂物，低洼处垫实，再铺地板
+    for (let dx = -1; dx <= w; dx++)
+      for (let dz = -1; dz <= d; dz++) {
+        const x = bx + dx, z = bz + dz;
+        for (let y = h - 1; y < CHUNK_MAX_Y; y++) clear(x, y, z);
+        for (let y = heightAt(x, z) + 1; y < h - 1; y++) put(x, y, z, 'dirt');
+        put(x, h - 1, z, 'plank');
+      }
+
+    // 三层墙（四角用原木，其余木板；正面留 1×2 的门）
+    for (let y = 0; y < 3; y++) {
+      for (let dx = 0; dx < w; dx++)
+        for (let dz = 0; dz < d; dz++) {
+          const edge = (dx === 0 || dx === w - 1 || dz === 0 || dz === d - 1);
+          if (!edge) continue;
+          if (dz === 0 && dx === 1 && y < 2) continue;   // 门洞
+          const corner = (dx === 0 || dx === w - 1) && (dz === 0 || dz === d - 1);
+          put(bx + dx, h + y, bz + dz, corner ? 'wood' : 'plank');
+        }
+    }
+
+    // 平顶 + 中间再叠一层，像个屋顶
+    for (let dx = -1; dx <= w; dx++)
+      for (let dz = -1; dz <= d; dz++) put(bx + dx, h + 3, bz + dz, 'wood');
+    for (let dx = 1; dx < w - 1; dx++)
+      for (let dz = 1; dz < d - 1; dz++) put(bx + dx, h + 4, bz + dz, 'wood');
+  });
+
+  // 广场四周的火把
+  [[-7, 0], [7, 0], [0, -7], [0, 7], [-13, 13], [13, -13]].forEach(([tx, tz]) => {
+    const x = VILLAGE_X + tx, z = VILLAGE_Z + tz;
+    put(x, heightAt(x, z) + 1, z, 'torch');
+  });
+}
+
+// 生成并加载一个区块
+function generateChunk(cx, cz) {
+  const key = cx + ',' + cz;
+  if (chunks.has(key)) return;
+  const arr = new Uint8Array(CHUNK * CHUNK * CHUNK_MAX_Y);
+  const c = { arr, group: new THREE.Group(), maxY: 0, cx, cz };
+  chunks.set(key, c);
+  scene.add(c.group);
+
+  const x0 = cx * CHUNK, z0 = cz * CHUNK;
+  const DIRT_THICKNESS = 2;
+  for (let lx = 0; lx < CHUNK; lx++) {
+    for (let lz = 0; lz < CHUNK; lz++) {
+      const x = x0 + lx, z = z0 + lz;
+      const h = heightAt(x, z);
+      const waterArea = x >= GRASS_END;
+      const topBlock = waterArea ? 'sand' : 'grass';
+      for (let y = 0; y <= h; y++) {
+        let t;
+        if (y === 0) t = 'bedrock';
+        else if (y === h) t = topBlock;
+        else if (y >= h - DIRT_THICKNESS) t = waterArea ? 'sand' : 'dirt';
+        else t = 'stone';
+        if (isCave(x, y, z, h)) continue;                       // 洞穴：挖空
+        if (t === 'stone') {                                    // 石头里夹矿石
+          const ore = oreAt(x, y, z, h);
+          if (ore) t = ore;
+        }
+        arr[(y * CHUNK + lz) * CHUNK + lx] = BID[t];
+      }
+      // 水域区：填水到水面高度
+      if (waterArea && h < WATER_LEVEL) {
+        for (let y = h + 1; y <= WATER_LEVEL; y++) arr[(y * CHUNK + lz) * CHUNK + lx] = BID.water;
+      }
+      // 世界最外圈是沙地
+      if ((x === 0 || z === 0 || x === WORLD_SIZE - 1 || z === WORLD_SIZE - 1) && x < GRASS_END) {
+        arr[(h * CHUNK + lz) * CHUNK + lx] = BID.sand;
+      }
+      if (h > c.maxY) c.maxY = h;
+    }
+  }
+
+  // 世界四边的基岩墙（不可破坏，越不过去）
+  const WALL_H = 30;
+  for (let lx = 0; lx < CHUNK; lx++) {
+    const x = x0 + lx;
+    if (x !== 0 && x !== WORLD_SIZE - 1) continue;
+    for (let lz = 0; lz < CHUNK; lz++)
+      for (let y = 0; y <= WALL_H; y++) arr[(y * CHUNK + lz) * CHUNK + lx] = BID.bedrock;
+  }
+  for (let lz = 0; lz < CHUNK; lz++) {
+    const z = z0 + lz;
+    if (z !== 0 && z !== WORLD_SIZE - 1) continue;
+    for (let lx = 0; lx < CHUNK; lx++)
+      for (let y = 0; y <= WALL_H; y++) arr[(y * CHUNK + lz) * CHUNK + lx] = BID.bedrock;
+  }
+  if (c.maxY < WALL_H) c.maxY = WALL_H;
+
+  // 树木：每块最多 1 棵，位置由区块坐标确定（重载后一致）
+  const treeCount = chunkRand(cx, cz, 1) < 0.65 ? 1 : 0;
+  for (let i = 0; i < treeCount; i++) {
+    const tx = x0 + 4 + Math.floor(chunkRand(cx, cz, 10 + i * 3) * (CHUNK - 8));
+    const tz = z0 + 4 + Math.floor(chunkRand(cx, cz, 11 + i * 3) * (CHUNK - 8));
+    if (tx >= GRASS_END) continue;               // 水域不长树
+    plantTreeInChunk(arr, cx, cz, tx, heightAt(tx, tz) + 1, tz);
+  }
+
+  // 村庄：只有覆盖到村庄范围的区块才会建造
+  const nearVillage = Math.abs(x0 + CHUNK / 2 - VILLAGE_X) < CHUNK + VILLAGE_R &&
+                      Math.abs(z0 + CHUNK / 2 - VILLAGE_Z) < CHUNK + VILLAGE_R;
+  if (nearVillage) buildVillageInChunk(c, cx, cz);
+
+  rebuildChunkMesh(cx, cz);
+}
+
+// 卸载区块（离开的范围之外就释放）
+function unloadChunk(cx, cz) {
+  const key = cx + ',' + cz;
+  const c = chunks.get(key);
+  if (!c) return;
+  scene.remove(c.group);
+  c.group.traverse(o => {
+    if (o.isInstancedMesh && o.dispose) o.dispose();
+  });
+  chunks.delete(key);
+}
+
+// 根据玩家所在区块，加载 3×3、卸载远处
+let curChunkKey = '';
+function updateChunks(force) {
+  const cx = Math.floor(player.pos.x / CHUNK), cz = Math.floor(player.pos.z / CHUNK);
+  const key = cx + ',' + cz;
+  if (!force && key === curChunkKey) return;
+  curChunkKey = key;
+  for (let dx = -LOAD_RADIUS; dx <= LOAD_RADIUS; dx++)
+    for (let dz = -LOAD_RADIUS; dz <= LOAD_RADIUS; dz++) {
+      const nx = cx + dx, nz = cz + dz;
+      if (nx < 0 || nz < 0 || nx >= CHUNKS_PER_SIDE || nz >= CHUNKS_PER_SIDE) continue;
+      generateChunk(nx, nz);
+    }
+  const drop = [];
+  for (const k of chunks.keys()) {
+    const [kx, kz] = k.split(',').map(Number);
+    if (Math.abs(kx - cx) > LOAD_RADIUS || Math.abs(kz - cz) > LOAD_RADIUS) drop.push([kx, kz]);
+  }
+  drop.forEach(([kx, kz]) => unloadChunk(kx, kz));
+}
+
+// 出生点：世界中心的草坪区
+const SPAWN_X = Math.floor(WORLD_SIZE / 2), SPAWN_Z = Math.floor(WORLD_SIZE / 2);
+
+// ========= 渲染：每个区块单独 InstancedMesh（只渲染可见方块） =========
 function isOpaque(t) {
   return t && !NO_COLLIDE.has(t) && !HALF_BLOCKS.has(t);
 }
 function isVoxelVisible(x, y, z) {
   // 只有实心方块才能遮挡；火把/水/抱枕等不遮挡邻居
-  const open = (dx, dy, dz) => {
-    const t = world.get(kkey(x + dx, y + dy, z + dz));
-    return !isOpaque(t);
-  };
+  const open = (dx, dy, dz) => !isOpaque(getBlock(x + dx, y + dy, z + dz));
   return open(1,0,0) || open(-1,0,0) || open(0,1,0) || open(0,-1,0) || open(0,0,1) || open(0,0,-1);
 }
 // 抱枕几何体（半格高，略窄）
@@ -431,24 +913,48 @@ const pillowGeo = new THREE.BoxGeometry(0.9, 0.5, 0.9);
 // 火把几何体
 const torchStickGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6);
 const torchFlameGeo = new THREE.SphereGeometry(0.13, 8, 6);
-function rebuildMeshes() {
-  for (const g of instancedGroups) { scene.remove(g); if (g.dispose) g.dispose(); }
-  instancedGroups = [];
-  for (const l of torchLights) scene.remove(l);
-  torchLights = [];
-  // 按类型收集可见方块
+
+// 区块内的方块是否实心（优先读本区块数组，跨边界才查全局）
+function chunkSolid(c, lx, ly, lz) {
+  if (ly < 0 || ly >= CHUNK_MAX_Y) return false;
+  if (lx < 0 || lz < 0 || lx >= CHUNK || lz >= CHUNK)
+    return isOpaque(getBlock(c.cx * CHUNK + lx, ly, c.cz * CHUNK + lz));
+  return isOpaque(BTP[c.arr[(ly * CHUNK + lz) * CHUNK + lx]] || null);
+}
+function chunkVisible(c, lx, ly, lz) {
+  return !chunkSolid(c, lx + 1, ly, lz) || !chunkSolid(c, lx - 1, ly, lz) ||
+         !chunkSolid(c, lx, ly + 1, lz) || !chunkSolid(c, lx, ly - 1, lz) ||
+         !chunkSolid(c, lx, ly, lz + 1) || !chunkSolid(c, lx, ly, lz - 1);
+}
+
+// 只重建一个区块的网格（挖/放方块只影响这一块，不会被整张地图拖慢）
+function rebuildChunkMesh(cx, cz) {
+  const c = chunks.get(cx + ',' + cz);
+  if (!c) return;
+  for (let i = c.group.children.length - 1; i >= 0; i--) {
+    const o = c.group.children[i];
+    c.group.remove(o);
+    if (o.isInstancedMesh && o.dispose) o.dispose();
+  }
+  const x0 = cx * CHUNK, z0 = cz * CHUNK;
   const byType = {};
-  for (const [key, t] of world) {
-    const [x, y, z] = key.split(',').map(Number);
-    if (!isVoxelVisible(x, y, z)) continue;
-    (byType[t] || (byType[t] = [])).push([x, y, z]);
+  const topY = Math.min(CHUNK_MAX_Y - 1, c.maxY + 1);
+  for (let y = 0; y <= topY; y++) {
+    for (let lz = 0; lz < CHUNK; lz++) {
+      for (let lx = 0; lx < CHUNK; lx++) {
+        const id = c.arr[(y * CHUNK + lz) * CHUNK + lx];
+        if (!id) continue;
+        if (!chunkVisible(c, lx, y, lz)) continue;
+        const t = BTP[id];
+        (byType[t] || (byType[t] = [])).push([x0 + lx, y, z0 + lz]);
+      }
+    }
   }
   const m4 = new THREE.Matrix4();
   for (const t of BLOCK_TYPES) {
     const list = byType[t];
     if (!list || !list.length) continue;
     if (t === 'pillow') {
-      // 抱枕：半格高，中心在 y+0.25
       const inst = new THREE.InstancedMesh(pillowGeo, mat.pillow, list.length);
       list.forEach(([x, y, z], i) => {
         m4.makeTranslation(x + 0.5, y + 0.25, z + 0.5);
@@ -456,10 +962,8 @@ function rebuildMeshes() {
       });
       inst.instanceMatrix.needsUpdate = true;
       inst.frustumCulled = false;
-      scene.add(inst);
-      instancedGroups.push(inst);
+      c.group.add(inst);
     } else if (t === 'torch') {
-      // 火把：木柄圆柱 + 火焰球 + 点光源
       list.forEach(([x, y, z]) => {
         const grp = new THREE.Group();
         const stick = new THREE.Mesh(torchStickGeo, mat.torchStick);
@@ -469,16 +973,12 @@ function rebuildMeshes() {
         flame.position.y = 0.65;
         grp.add(flame);
         grp.position.set(x + 0.5, y, z + 0.5);
-        scene.add(grp);
-        instancedGroups.push(grp);
-        // 点光源（暖色、近距离）
+        c.group.add(grp);
         const light = new THREE.PointLight(0xffaa44, 1.0, 8, 1.8);
         light.position.set(x + 0.5, y + 0.7, z + 0.5);
-        scene.add(light);
-        torchLights.push(light);
+        c.group.add(light);
       });
     } else {
-      // 标准方块（含 plank）
       const inst = new THREE.InstancedMesh(boxGeo, BLOCK_MAT[t], list.length);
       list.forEach(([x, y, z], i) => {
         m4.makeTranslation(x + 0.5, y + 0.5, z + 0.5);
@@ -486,12 +986,31 @@ function rebuildMeshes() {
       });
       inst.instanceMatrix.needsUpdate = true;
       inst.frustumCulled = false;
-      scene.add(inst);
-      instancedGroups.push(inst);
+      c.group.add(inst);
     }
   }
 }
-rebuildMeshes();
+
+// 方块变动后：重建该方块所在区块和相邻区块（交界处的面要跟着更新）
+function rebuildAround(x, z) {
+  const cx = Math.floor(x / CHUNK), cz = Math.floor(z / CHUNK);
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dz = -1; dz <= 1; dz++) {
+      const nx = cx + dx, nz = cz + dz;
+      if (chunks.has(nx + ',' + nz)) rebuildChunkMesh(nx, nz);
+    }
+}
+
+// 先生成出生点周围的区块（必须在渲染资源定义之后，player 初始化之前）
+(function initSpawnChunks() {
+  const cx = Math.floor(SPAWN_X / CHUNK), cz = Math.floor(SPAWN_Z / CHUNK);
+  for (let dx = -LOAD_RADIUS; dx <= LOAD_RADIUS; dx++)
+    for (let dz = -LOAD_RADIUS; dz <= LOAD_RADIUS; dz++) {
+      const nx = cx + dx, nz = cz + dz;
+      if (nx < 0 || nz < 0 || nx >= CHUNKS_PER_SIDE || nz >= CHUNKS_PER_SIDE) continue;
+      generateChunk(nx, nz);
+    }
+})();
 
 // ========= 瞄准高亮线框 =========
 const highlight = new THREE.LineSegments(
@@ -504,9 +1023,9 @@ scene.add(highlight);
 // ========= 玩家与物理 =========
 const PW = 0.3, PH = 1.8, PD = 0.3;       // 半宽/高/半深
 const EYE = 1.62;
-const GRAVITY = -28, MOVE_SPEED = 5.0, JUMP_VY = 9.0;
+const GRAVITY = -28, MOVE_SPEED = 5.0, JUMP_VY = 9.0, FLY_SPEED = 7.0;
 const player = {
-  pos: new THREE.Vector3(30, topYAt(30, 30) + 3, 30),
+  pos: new THREE.Vector3(SPAWN_X, topYAt(SPAWN_X, SPAWN_Z) + 3, SPAWN_Z),
   vel: new THREE.Vector3(),
   onGround: false,
 };
@@ -517,7 +1036,7 @@ function playerAABB() {
   return { minX: p.x - PW, maxX: p.x + PW, minY: p.y, maxY: p.y + PH, minZ: p.z - PD, maxZ: p.z + PD };
 }
 function overlapsPlayer(x, y, z) {
-  const t = world.get(kkey(x, y, z));
+  const t = getBlock(x, y, z);
   if (!t || NO_COLLIDE.has(t)) return false;
   const bh = HALF_BLOCKS.has(t) ? 0.5 : 1;
   const a = playerAABB();
@@ -532,7 +1051,7 @@ function resolveAxis(axis) {
     for (let y = y0; y <= y1; y++)
       for (let z = z0; z <= z1; z++) {
         if (!isVoxel(x, y, z)) continue;
-        const t = world.get(kkey(x, y, z));
+        const t = getBlock(x, y, z);
         if (NO_COLLIDE.has(t)) continue;       // 火把等可穿过
         const bh = HALF_BLOCKS.has(t) ? 0.5 : 1; // 半格碰撞高度
         if (axis === 'x') {
@@ -581,23 +1100,167 @@ function raycastVoxel(origin, dir, maxDist = 6) {
 
 // ========= 输入：指针锁定 + 键鼠 =========
 let locked = false;
+let thirdPerson = false;   // 第三人称（看自己）
 let yaw = 0, pitch = 0;
 const keys = {};
+let flying = false;       // 飞行模式（F 键 / 手机「飞」按钮切换）
 let selectedIdx = 0;
 const hudEl = document.getElementById('hud');
-// 触屏设备检测（手机/平板）；URL 加 ?touch=1 可在电脑上强制模拟手机模式
-const forceTouch = /[?&]touch=1/.test(location.search);
-const isTouch = forceTouch || (matchMedia('(pointer: coarse)').matches && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+// 触屏设备检测（手机/平板）；?touch=1 强制手机模式，?touch=0 强制电脑模式，玩家可在菜单里手动切换
+const forcedDev = /[?&]touch=1/.test(location.search) ? 1 : (/[?&]touch=0/.test(location.search) ? 0 : -1);
+const isTouch = forcedDev === 1 ? true : forcedDev === 0 ? false
+  : (matchMedia('(pointer: coarse)').matches && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
 if (isTouch) {
   document.body.classList.add('touch');
   document.querySelector('#overlay .tip').textContent = '点按屏幕开始游戏';
-  document.getElementById('hint').textContent = '左摇杆移动 ｜ 拖屏幕转视角 ｜ 点方块挖掘 ｜ 本游戏为石某某制作';
 }
+
+// ===== 新手操作指南（点顶部按钮全屏显示，点「退出」回到游戏） =====
+const guideEl = document.getElementById('guide');
+const guideListEl = document.getElementById('guideList');
+const GUIDE_PC = [
+  'WASD 移动，空格跳跃',
+  '移动鼠标转动视角',
+  '左键破坏方块，右键放置方块',
+  '1-0 选择方块，滚轮或 Q / E 循环切换（矿石在第 11-14 格）',
+  '按住 P 从身后看自己的小球',
+  '按 F 切换飞行，飞行中空格上升、B 下降',
+  '按 H 打开 / 关闭这份操作指南',
+  'ESC 暂停',
+  '往下挖会进入洞穴，越深越容易挖到煤、铁、金矿',
+];
+const GUIDE_TOUCH = [
+  '左下摇杆移动，推得越远走得越快',
+  '在屏幕上拖动转动视角（轻点不会挖方块）',
+  '用右下「挖」按钮破坏准星指的方块，「放」按钮放置方块',
+  '点快捷栏切换手里的方块（矿石在第 11-14 格）',
+  '按住右下「看」按钮从身后看自己的小球',
+  '点「飞」切换飞行，飞行中「跳」上升、「降」下降',
+  '点顶部「新手操作指南」文字打开 / 关闭这份说明',
+  '往下挖会进入洞穴，越深越容易挖到煤、铁、金矿',
+];
+function openGuide() {
+  // 两组说明都列出来：自己设备那组高亮，另一组淡显（方便换设备时对照）
+  const groups = [
+    { title: '电脑（键盘 + 鼠标）', items: GUIDE_PC, cur: !isTouch },
+    { title: '手机 / 触屏', items: GUIDE_TOUCH, cur: isTouch },
+  ];
+  guideListEl.innerHTML = groups.map(g =>
+    '<li class="gHead' + (g.cur ? ' cur' : '') + '">' + g.title + (g.cur ? '（当前设备）' : '') + '</li>' +
+    g.items.map(t => '<li class="' + (g.cur ? '' : 'dim') + '">' + t + '</li>').join('')
+  ).join('') + '<li class="gHead">其它</li><li>本游戏为石某某制作</li>';
+  document.getElementById('guideSub').textContent =
+    '当前设备：' + (isTouch ? '手机 / 触屏' : '电脑（键盘 + 鼠标）') + ' ｜ 下方对应说明为高亮那一组';
+  guideEl.classList.add('show');
+  for (const k in keys) keys[k] = false;          // 打开指南时松开所有按键
+  if (document.exitPointerLock) document.exitPointerLock();
+}
+function closeGuide() {
+  guideEl.classList.remove('show');
+  // 退出指南后回到游戏：电脑上重新锁定鼠标（若无锁定则点画面继续）
+  if (!isTouch && !useDragLook && overlay.classList.contains('hidden')) {
+    try { const p = renderer.domElement.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  }
+}
+const hintEl = document.getElementById('hint');
+// 顶部文字上直接标明怎么打开（电脑玩家看不到光标，必须知道按 H）
+hintEl.textContent = isTouch ? '新手操作指南（点击打开）' : '新手操作指南（按 H）';
+hintEl.addEventListener('click', openGuide);
+document.getElementById('guideClose').addEventListener('click', closeGuide);
+
+// ===== 聊天（键盘 / 语音输入，联机房间内互相收发） =====
+const chatLogEl = document.getElementById('chatLog');
+const chatInputEl = document.getElementById('chatInput');
+function addChatMsg(name, text) {
+  if (!chatLogEl || !text) return;
+  const row = document.createElement('div');
+  const who = document.createElement('span');
+  who.className = 'who';
+  who.textContent = name + '：';
+  row.appendChild(who);
+  row.appendChild(document.createTextNode(String(text).slice(0, 80)));
+  chatLogEl.appendChild(row);
+  chatLogEl.scrollTop = chatLogEl.scrollHeight;
+}
+function sendChat() {
+  const text = (chatInputEl.value || '').trim();
+  if (!text) return;
+  if (!netOn) { addChatMsg('系统', '进入联机房间后才能聊天'); return; }
+  chatInputEl.value = '';
+  addChatMsg((myName || '我') + '（我）', text);
+  netSend({ t: 'chat', n: myName || '玩家', m: text });
+}
+document.getElementById('chatSend').addEventListener('click', e => { e.stopPropagation(); sendChat(); });
+chatInputEl.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); sendChat(); }
+});
+// 语音输入（Web Speech API，不支持的浏览器会提示）
+(function setupVoice() {
+  const btn = document.getElementById('chatMic');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    btn.addEventListener('click', () => addChatMsg('系统', '当前浏览器不支持语音输入，请用键盘输入'));
+    return;
+  }
+  let rec = null, on = false;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (on) { try { rec.stop(); } catch (err) {} return; }
+    rec = new SR();
+    rec.lang = 'zh-CN';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => { on = true; btn.classList.add('rec'); };
+    rec.onresult = ev => {
+      const txt = ev.results[0][0].transcript;
+      chatInputEl.value = (chatInputEl.value ? chatInputEl.value + ' ' : '') + txt;
+      sendChat();                     // 识别完直接发出
+    };
+    rec.onend = () => { on = false; btn.classList.remove('rec'); };
+    rec.onerror = () => { on = false; btn.classList.remove('rec'); addChatMsg('系统', '语音识别失败，请用键盘输入'); };
+    try { rec.start(); } catch (err) { on = false; btn.classList.remove('rec'); }
+  });
+})();
+
+// 窄屏：两翼按钮点开后全屏显示，关闭按钮收起
+(function setupSidePanels() {
+  const map = { sideBtnLeft: 'sideLeft', sideBtnRight: 'sideRight' };
+  for (const btnId in map) {
+    const btn = document.getElementById(btnId);
+    if (!btn) continue;
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(map[btnId]);
+      el.classList.toggle('open');
+      for (const k in keys) keys[k] = false;      // 展开面板时松开所有按键
+    });
+  }
+  document.querySelectorAll('.sideClose').forEach(b => {
+    b.addEventListener('click', () => {
+      const el = document.getElementById(b.dataset.side);
+      if (el) el.classList.remove('open');
+    });
+  });
+})();
+
+// ===== 操作方式切换：电脑键鼠 ↔ 手机触屏（重新载入并记住选择） =====
+(function setupDevSwitch() {
+  const tip = document.getElementById('devTip');
+  const btn = document.getElementById('btnSwitchDev');
+  if (!tip || !btn) return;
+  tip.textContent = '操作方式：' + (isTouch ? '手机触屏' : '电脑键鼠');
+  btn.textContent = isTouch ? '改用电脑键鼠' : '改用手机触屏';
+  btn.addEventListener('click', () => {
+    const url = new URL(location.href);
+    url.searchParams.set('touch', isTouch ? '0' : '1');
+    location.href = url.toString();
+  });
+})();
 
 function buildHUD() {
   hudEl.innerHTML = '';
-  // 只显示前10个方块（水不显示在快捷栏，仅作为地形存在）
-  BLOCK_TYPES.slice(0, 10).forEach((t, i) => {
+  // 快捷栏显示全部方块：1-0 对应前 10 种，矿石等靠点按选择
+  BLOCK_TYPES.forEach((t, i) => {
     const slot = document.createElement('div');
     slot.className = 'slot' + (i === selectedIdx ? ' active' : '');
     slot.innerHTML = `<span class="num">${i + 1}</span><div class="swatch" style="background:${BLOCK_COLOR[t]}"></div>`;
@@ -605,17 +1268,39 @@ function buildHUD() {
   });
 }
 buildHUD();
-// 手机：点按快捷栏切换方块
-if (isTouch) {
-  hudEl.addEventListener('click', (e) => {
-    const slot = e.target.closest('.slot');
-    if (!slot) return;
-    const idx = Array.prototype.indexOf.call(hudEl.children, slot);
-    if (idx >= 0) { selectedIdx = idx; buildHUD(); }
-  });
+// 点按 / 点击快捷栏切换方块（手机和电脑都支持；电脑需先按 ESC 释放鼠标）
+hudEl.addEventListener('click', (e) => {
+  const slot = e.target.closest('.slot');
+  if (!slot) return;
+  const idx = Array.prototype.indexOf.call(hudEl.children, slot);
+  if (idx >= 0) { selectedIdx = idx; buildHUD(); }
+});
+// 飞行模式：F 键或手机「飞」按钮切换；飞行时空格上升、Shift（「降」键）下降
+function toggleFly() {
+  flying = !flying;
+  keys['Space'] = false;
+  keys['ShiftLeft'] = false;
+  document.body.classList.toggle('fly', flying);
+  const el = document.getElementById('btnFly');
+  if (el) { el.textContent = flying ? '飞中' : '飞'; el.classList.toggle('on', flying); }
+  const tag = document.getElementById('flyTag');
+  if (tag) tag.textContent = isTouch ? '飞行中 · 跳=升 / 降=落' : '飞行中 · 空格=升 / B=落';
 }
+// 电脑：鼠标滚轮 / Q、E 循环切换方块（1-0 之外的矿石也能选到）
+const cycleBlock = (d) => {
+  selectedIdx = (selectedIdx + d + BLOCK_TYPES.length) % BLOCK_TYPES.length;
+  buildHUD();
+};
+addEventListener('wheel', (e) => {
+  if (!locked) return;
+  e.preventDefault();
+  cycleBlock(e.deltaY > 0 ? 1 : -1);
+}, { passive: false });
 
 const overlay = document.getElementById('overlay');
+const overlayTitle = document.querySelector('#overlay h1');
+const overlayTip = document.querySelector('#overlay .tip');
+let started = false;   // 是否已经进入游戏（用于 ESC 后显示暂停层而不是开始菜单）
 // 拖拽视角模式：pointer lock 不可用时（如 iframe 预览环境）自动降级
 let useDragLook = false;
 let dragging = false;
@@ -625,27 +1310,48 @@ let inIframe = false;
 try { inIframe = (window.self !== window.top); } catch (e) { inIframe = true; }
 
 renderer.domElement.addEventListener('click', () => {
+  if (!started) return;             // 开始菜单阶段：只有点按钮才能进入，点背景无反应
   if (!locked && !useDragLook) {
     // iframe 环境（如 trae-preview）与触屏设备不支持 pointer lock，直接降级
     if (inIframe || isTouch) { enableDragLook(); return; }
-    try {
-      const p = renderer.domElement.requestPointerLock();
-      if (p && p.catch) p.catch(() => enableDragLook());  // Promise rejection（部分浏览器）
-    } catch (e) { enableDragLook(); }
+    tryLock();
   }
 });
-// pointer lock 失败（其他环境）→ 降级为拖拽模式
-document.addEventListener('pointerlockerror', () => { enableDragLook(); });
+// 指针锁定失败：允许重试（ESC 退出后有短暂冷却），连续失败多次才降级拖拽
+let lockFailCount = 0;
+function onLockFail() {
+  lockFailCount++;
+  if (lockFailCount >= 3) enableDragLook();
+}
+function tryLock() {
+  try {
+    const p = renderer.domElement.requestPointerLock();
+    if (p && p.catch) p.catch(() => onLockFail());
+  } catch (e) { onLockFail(); }
+}
+document.addEventListener('pointerlockerror', () => { onLockFail(); });
 function enableDragLook() {
   useDragLook = true;
   overlay.classList.add('hidden');  // 隐藏封面，进入游戏
-  document.getElementById('hint').textContent = isTouch
-    ? '左摇杆移动 ｜ 拖屏幕转视角 ｜ 点方块挖掘 ｜ 本游戏为石某某制作'
-    : 'WASD 移动 ｜ 空格 跳跃 ｜ 左键拖动视角 / 单击破坏 ｜ 右键放置 ｜ 1-0 选方块 ｜ 本游戏为石某某制作';
+}
+// ESC 退出锁定后显示暂停层（不再回到开始菜单）
+function showPause() {
+  overlay.classList.remove('hidden');
+  overlay.classList.add('paused');
+  overlayTitle.textContent = '已暂停';
+  overlayTip.textContent = '点击画面继续游戏 ｜ 按 H 查看操作指南';
 }
 document.addEventListener('pointerlockchange', () => {
   locked = (document.pointerLockElement === renderer.domElement);
-  overlay.classList.toggle('hidden', locked || useDragLook);
+  if (locked) {
+    lockFailCount = 0;
+    overlay.classList.add('hidden');
+    overlay.classList.remove('paused');
+    overlayTitle.textContent = '方块世界 2.0';
+    return;
+  }
+  if (useDragLook || isTouch) return;   // 拖拽 / 触屏模式下不需要封面
+  if (started) showPause();
 });
 document.addEventListener('mousemove', (e) => {
   if (locked || (useDragLook && dragging)) {
@@ -658,17 +1364,32 @@ document.addEventListener('mousemove', (e) => {
 addEventListener('keydown', (e) => {
   keys[e.code] = true;
   if (e.code === 'Space') e.preventDefault();
+  if (e.code === 'KeyP') thirdPerson = true;   // 按住 按住 P 看自己，松开回第一人称
   // 数字键选方块（1-9 对应前9个，0 对应第10个）
   if (e.code.startsWith('Digit')) {
     let n = parseInt(e.code.slice(5)) - 1;
     if (e.code === 'Digit0') n = 9; // 0 键 → 第10个方块
     if (n >= 0 && n < BLOCK_TYPES.length) { selectedIdx = n; buildHUD(); }
   }
+  // Q / E 循环切换方块（矿石在第 11-14 格，用这两个键也能选到）
+  if (!e.repeat && e.code === 'KeyQ') cycleBlock(-1);
+  if (!e.repeat && e.code === 'KeyE') cycleBlock(1);
+  // F 切换飞行模式
+  if (!e.repeat && e.code === 'KeyF') toggleFly();
+  // H 打开/关闭新手操作指南（游戏中鼠标被锁定、没有光标，所以点不到顶部文字，用键盘开）
+  if (!e.repeat && e.code === 'KeyH') {
+    if (guideEl.classList.contains('show')) closeGuide(); else openGuide();
+    return;
+  }
 });
-addEventListener('keyup', (e) => { keys[e.code] = false; });
+addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+  if (e.code === 'KeyP') thirdPerson = false;   // 松开 P 回到第一人称
+});
 
-// 鼠标按下：破坏/放置 / 拖拽视角
+// 鼠标按下：破坏/放置 / 拖拽视角（只对画布生效，点界面按钮永远不会挖到方块）
 addEventListener('mousedown', (e) => {
+  if (e.target !== renderer.domElement) return;
   if (useDragLook) {
     // 拖拽模式：左键按住拖动控制视角，右键放置
     if (e.button === 0) { dragging = true; dragMoved = false; }
@@ -680,10 +1401,10 @@ addEventListener('mousedown', (e) => {
   }
 });
 addEventListener('mouseup', (e) => {
-  if (useDragLook && e.button === 0) {
-    dragging = false;
-    if (!dragMoved) breakBlock();  // 没拖动 → 视为单击破坏
-  }
+  if (!useDragLook || e.button !== 0) return;
+  dragging = false;
+  if (e.target !== renderer.domElement) return;   // 抬手落在按钮上 → 不挖
+  if (!dragMoved) breakBlock();                   // 在画布上没拖动 → 视为单击破坏
 });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -747,6 +1468,8 @@ if (isTouch) {
     }
   };
   bindBtn('btnJump',  () => { keys['Space'] = true; }, () => { keys['Space'] = false; });
+  bindBtn('btnFly',   () => toggleFly());
+  bindBtn('btnDown',  () => { keys['ShiftLeft'] = true; }, () => { keys['ShiftLeft'] = false; });
   bindBtn('btnBreak', () => breakBlock());
   bindBtn('btnPlace', () => placeBlock());
 
@@ -776,8 +1499,7 @@ if (isTouch) {
     for (const t of e.changedTouches) {
       if (t.identifier !== lookId) continue;
       lookId = null;
-      // 轻点（时间短、几乎没移动）→ 破坏准星所指方块
-      if (performance.now() - lookT0 < 250 && lookDist < 12) breakBlock();
+      // 手指抬起不触发任何操作：挖 / 放方块只用右下角按钮，避免误触把面前方块挖掉
     }
   };
   renderer.domElement.addEventListener('touchend', lookEnd);
@@ -792,15 +1514,16 @@ function getTarget() {
 function breakBlock() {
   const r = getTarget();
   if (!r.hit) return;
-  if (world.get(kkey(r.x, r.y, r.z)) === 'bedrock') return;  // 基岩不可破坏
+  if (getBlock(r.x, r.y, r.z) === 'bedrock') return;  // 基岩不可破坏
   delVoxel(r.x, r.y, r.z);
-  rebuildMeshes();
+  rebuildAround(r.x, r.z);
+  netBroadcastEdit(r.x, r.y, r.z, null);
 }
 function placeBlock() {
   const r = getTarget();
   if (!r.hit) return;
   // 点击抱枕 → 触发睡眠
-  if (world.get(kkey(r.x, r.y, r.z)) === 'pillow') {
+  if (getBlock(r.x, r.y, r.z) === 'pillow') {
     trySleep();
     return;
   }
@@ -809,7 +1532,8 @@ function placeBlock() {
   if (isVoxel(nx, ny, nz)) return;
   if (overlapsPlayer(nx, ny, nz)) return; // 不能塞进自己
   setVoxel(nx, ny, nz, BLOCK_TYPES[selectedIdx]);
-  rebuildMeshes();
+  rebuildAround(nx, nz);
+  netBroadcastEdit(nx, ny, nz, BLOCK_TYPES[selectedIdx]);
 }
 // ========= 抱枕睡眠 =========
 function trySleep() {
@@ -821,6 +1545,387 @@ function trySleep() {
     // 不自动重新锁定（浏览器要求用户手势触发），用户点击画面即可重新进入
   }, 150);
 }
+
+// ========= 联机（PeerJS 点对点，房主建房 / 房间码加入） =========
+const netInfoEl = document.getElementById('netInfo');
+const nameInput = document.getElementById('nameInput');
+const menuMsg   = document.getElementById('menuMsg');
+let myName = '玩家';
+let netOn = false;         // 是否处于联机状态
+let isHost = false;        // 是否是房主
+const MAX_PLAYERS = 5;     // 一个房间最多 5 人（含房主）
+let roomLabel = '';        // 房间名（房间 01 / 私密 1234）
+let myPeer = null;         // 自己的 Peer 实例
+let hostConn = null;       // 客户端：与房主的连接
+const conns = [];          // 房主：所有客户端连接
+const remotes = new Map(); // 远程玩家小球
+let posTimer = 0;
+
+const BALL_COLORS = [0xff6b6b, 0x4dabf7, 0xffd43b, 0x51cf66, 0xda77f2, 0xff922b, 0x20c997, 0xffa8c5];
+
+function setMenuMsg(t) { if (menuMsg) menuMsg.textContent = t || ''; }
+function readName() {
+  const v = ((nameInput && nameInput.value) || '').trim().slice(0, 8);
+  return v || '玩家';
+}
+// 自己的小球颜色：开始菜单里自己选，房主会协调避免撞色
+let myColorVal = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+function myColor() { return myColorVal; }
+function pickRandomColor() { return BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)]; }
+
+// 开始菜单的颜色选择器
+function buildColorPicker() {
+  const row = document.getElementById('colorRow');
+  if (!row) return;
+  row.innerHTML = '';
+  BALL_COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'cdot' + (c === myColorVal ? ' on' : '');
+    d.style.background = '#' + c.toString(16).padStart(6, '0');
+    d.addEventListener('click', e => {
+      e.stopPropagation();
+      myColorVal = c;
+      buildColorPicker();
+    });
+    row.appendChild(d);
+  });
+}
+buildColorPicker();
+
+// 名字标签（画布贴图 → 精灵）
+function makeNameSprite(text) {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(0,0,0,0.6)';
+  g.fillRect(6, 12, 244, 40);
+  g.font = 'bold 28px "Microsoft YaHei", sans-serif';
+  g.fillStyle = '#fff';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, 128, 33, 232);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+  sp.scale.set(1.7, 0.42, 1);
+  return sp;
+}
+
+// 远程玩家：一个小球 + 眼睛 + 头顶姓名
+function addRemote(id, name, color) {
+  if (remotes.has(id)) return remotes.get(id);
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.36, 18, 14),
+    new THREE.MeshLambertMaterial({ color: color || 0xffffff })
+  );
+  mesh.position.set(SPAWN_X, topYAt(SPAWN_X, SPAWN_Z) + 1, SPAWN_Z);
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), eyeMat);
+  const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), eyeMat);
+  e1.position.set(-0.13, 0.1, -0.32);
+  e2.position.set(0.13, 0.1, -0.32);
+  mesh.add(e1); mesh.add(e2);
+  const label = makeNameSprite(name);
+  label.position.set(0, 1.0, 0);
+  mesh.add(label);
+  scene.add(mesh);
+  const rec = { mesh, label, name, color, tx: mesh.position.x, ty: mesh.position.y, tz: mesh.position.z, tyaw: 0 };
+  remotes.set(id, rec);
+  updateNetInfo();
+  return rec;
+}
+
+function removeRemote(id) {
+  const r = remotes.get(id);
+  if (!r) return;
+  scene.remove(r.mesh);
+  r.mesh.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
+  });
+  remotes.delete(id);
+  updateNetInfo();
+}
+
+function updateNetInfo() {
+  if (!netOn) { netInfoEl.classList.add('hidden'); return; }
+  netInfoEl.classList.remove('hidden');
+  netInfoEl.textContent = (isHost ? roomLabel + '（房主）' : roomLabel) +
+    ' ｜ 在线 ' + Math.min(remotes.size + 1, MAX_PLAYERS) + '/' + MAX_PLAYERS + ' 人';
+}
+
+// 退出联机并回到开始菜单（房间满员、连接异常时用）
+function quitToMenu(msg) {
+  netOn = false;
+  isHost = false;
+  conns.forEach(c => { try { c.close(); } catch (e) {} });
+  conns.length = 0;
+  if (hostConn) { try { hostConn.close(); } catch (e) {} hostConn = null; }
+  if (myPeer) { try { myPeer.destroy(); } catch (e) {} myPeer = null; }
+  remotes.forEach((r, id) => removeRemote(id));
+  remotes.clear();
+  updateNetInfo();
+  started = false;
+  overlay.classList.remove('hidden', 'paused');
+  const sl = document.getElementById('sideLeft');
+  if (sl) sl.classList.remove('hidden');
+  finishFakeLoad();
+  menuMsg.textContent = msg || '';
+}
+
+// 房间消息收发
+function sendToPeers(data, exceptPeer) {
+  if (!isHost) return;
+  conns.forEach(c => {
+    if (c.open && c.peer !== exceptPeer) { try { c.send(data); } catch (e) {} }
+  });
+}
+function netSend(data) {
+  if (!netOn) return;
+  if (isHost) sendToPeers(data, null);
+  else if (hostConn && hostConn.open) { try { hostConn.send(data); } catch (e) {} }
+}
+function netBroadcastEdit(x, y, z, type) {
+  netSend({ t: 'edit', id: myPeer ? myPeer.id : '', x, y, z, type: type || null });
+}
+
+function handleNetData(data, fromPeer) {
+  if (!data || !data.t) return;
+  if (data.t === 'full') {                       // 房主回：房间已满，人数上限 5
+    quitToMenu('房间已满（最多 ' + (data.max || MAX_PLAYERS) + ' 人），请换个房间');
+    return;
+  }
+  if (isHost) sendToPeers(data, fromPeer);   // 房主中转
+  const pid = data.id || fromPeer;
+  if (data.t === 'hello') {
+    let color = data.color;
+    if (isHost && !remotes.has(pid)) {
+      // 房主统一分配颜色，保证每个人的小球颜色都不一样
+      const used = new Set([myColorVal]);
+      remotes.forEach(r => used.add(r.color));
+      if (used.has(color)) {
+        const free = BALL_COLORS.find(c => !used.has(c));
+        color = (free === undefined) ? pickRandomColor() : free;
+        const tgt = conns.find(c => c.peer === fromPeer);
+        if (tgt && tgt.open) tgt.send({ t: 'setColor', id: pid, color });
+      }
+    }
+    addRemote(pid, data.name || '玩家', color);
+    if (isHost) {
+      // 给新加入者补发已有玩家名单（房主自己 + 其他客户端）
+      const tgt = conns.find(c => c.peer === fromPeer);
+      if (tgt && tgt.open) {
+        if (pid !== myPeer.id) tgt.send({ t: 'hello', id: myPeer.id, name: myName, color: myColor() });
+        remotes.forEach((r, rid) => {
+          if (rid !== pid) tgt.send({ t: 'hello', id: rid, name: r.name, color: r.color });
+        });
+      }
+    }
+  } else if (data.t === 'pos') {
+    const r = remotes.get(pid);
+    if (r) { r.tx = data.x; r.ty = data.y; r.tz = data.z; r.tyaw = data.yaw || 0; }
+  } else if (data.t === 'edit') {
+    if (data.type) setVoxel(data.x, data.y, data.z, data.type);
+    else delVoxel(data.x, data.y, data.z);
+    rebuildAround(data.x, data.z);
+  } else if (data.t === 'setColor') {
+    // 房主分配的专属颜色（只对自己生效）
+    if (myPeer && data.id === myPeer.id) {
+      myColorVal = data.color;
+      if (selfBall) selfBall.material.color.setHex(myColorVal);
+    }
+  } else if (data.t === 'chat') {
+    addChatMsg(data.n || '玩家', data.m);
+    if (isHost) sendToPeers(data, fromPeer);        // 房主把访客的聊天转发给其他人
+  } else if (data.t === 'bye') {
+    removeRemote(pid);
+  }
+}
+
+function setupConn(conn) {
+  conn.on('open', () => {
+    try { conn.send({ t: 'hello', id: myPeer.id, name: myName, color: myColor() }); } catch (e) {}
+  });
+  conn.on('data', d => handleNetData(d, conn.peer));
+  conn.on('close', () => {
+    removeRemote(conn.peer);
+    const i = conns.indexOf(conn);
+    if (i >= 0) conns.splice(i, 1);
+    updateNetInfo();
+  });
+  conn.on('error', () => {});
+}
+
+// ===== 进入房间：先尝试当房主；该房间已有人则自动作为访客加入 =====
+function enterRoom(peerId, label, mode) {
+  if (typeof Peer === 'undefined') { setRoomMsg('联机组件加载失败，请检查网络'); finishFakeLoad(); return; }
+  if (netOn) return;
+  myName = readName();
+  roomLabel = label;
+  hideRoomPanel();
+  startFakeLoad(2000);        // 联机时也先显示安慰式加载页，连上并进游戏后自动收起
+  isHost = true;
+  let fellBack = false;
+  myPeer = new Peer(peerId, { debug: 0 });
+  myPeer.on('open', () => {
+    netOn = true;
+    updateNetInfo();
+    enterGame();
+  });
+  myPeer.on('connection', conn => {
+    // 人数上限：房主自己算 1 人，已有 MAX_PLAYERS-1 个连接时拒绝新人
+    if (conns.length + 1 >= MAX_PLAYERS) {
+      conn.on('open', () => {
+        try { conn.send({ t: 'full', max: MAX_PLAYERS }); } catch (e) {}
+        setTimeout(() => { try { conn.close(); } catch (e) {} }, 300);
+      });
+      return;
+    }
+    conns.push(conn);
+    setupConn(conn);
+  });
+  myPeer.on('error', err => {
+    if (err.type === 'unavailable-id' && !fellBack) {
+      fellBack = true;
+      try { myPeer.destroy(); } catch (e) {}
+      myPeer = null;
+      if (mode === 'create') {          // 创建私密房间时撞码 → 换个新码重来
+        const c = String(Math.floor(100000 + Math.random() * 900000));
+        enterRoom('swpriv-' + c, '私密房间 ' + c, 'create');
+        return;
+      }
+      joinAsGuest(peerId, label);       // 房间里已经有房主 → 作为访客加入
+      return;
+    }
+    setMenuMsg('联机失败：' + err.type);
+    finishFakeLoad();           // 连接失败时收起加载页，回到开始菜单
+  });
+  myPeer.on('disconnected', () => { try { myPeer && myPeer.reconnect(); } catch (e) {} });
+}
+
+function joinAsGuest(peerId, label) {
+  isHost = false;
+  setMenuMsg('正在加入 ' + label + ' ...');
+  myPeer = new Peer({ debug: 0 });
+  myPeer.on('open', () => {
+    hostConn = myPeer.connect(peerId, { reliable: true });
+    setupConn(hostConn);
+    hostConn.on('open', () => {
+      netOn = true;
+      updateNetInfo();
+      enterGame();
+    });
+    setTimeout(() => { if (!netOn) setMenuMsg('加入失败，请重试或换个房间'); }, 6000);
+  });
+  myPeer.on('error', err => setMenuMsg('联机失败：' + err.type));
+}
+
+// ===== 房间列表面板 =====
+const roomPanelEl = document.getElementById('roomPanel');
+const roomGridEl  = document.getElementById('roomGrid');
+const roomMsgEl   = document.getElementById('roomMsg');
+const ROOM_COUNT = 10;
+function setRoomMsg(t) { if (roomMsgEl) roomMsgEl.textContent = t || ''; }
+function buildRoomGrid() {
+  roomGridEl.innerHTML = '';
+  for (let i = 1; i <= ROOM_COUNT; i++) {
+    const num = String(i).padStart(2, '0');
+    const card = document.createElement('div');
+    card.className = 'roomCard';
+    card.textContent = num;
+    card.addEventListener('click', e => {
+      e.stopPropagation();
+      setRoomMsg('');
+      enterRoom('swpub-' + num, '房间 ' + num);
+    });
+    roomGridEl.appendChild(card);
+  }
+}
+function showRoomPanel() {
+  buildRoomGrid();
+  setRoomMsg('');
+  roomPanelEl.classList.add('show');
+}
+function hideRoomPanel() {
+  roomPanelEl.classList.remove('show');
+}
+
+// 每帧：位置广播 + 远程小球平滑跟随
+function netTick(dt) {
+  if (!netOn || !myPeer) return;
+  posTimer += dt;
+  if (posTimer >= 0.1) {
+    posTimer = 0;
+    netSend({ t: 'pos', id: myPeer.id, x: player.pos.x, y: player.pos.y, z: player.pos.z, yaw });
+  }
+}
+
+function updateRemotes(dt) {
+  if (!remotes.size) return;
+  const k = Math.min(1, dt * 12);
+  remotes.forEach(r => {
+    r.mesh.position.x += (r.tx - r.mesh.position.x) * k;
+    r.mesh.position.y += (r.ty + 0.36 - r.mesh.position.y) * k;
+    r.mesh.position.z += (r.tz - r.mesh.position.z) * k;
+    r.mesh.rotation.y += ((r.tyaw - r.mesh.rotation.y + Math.PI * 4) % (Math.PI * 2) - Math.PI) * 0.2;
+  });
+}
+
+// 进入游戏（单人 / 联机共用）
+function enterGame(fromGesture) {
+  started = true;
+  overlay.classList.add('hidden');
+  document.getElementById('sideLeft').classList.add('hidden');   // 游戏中收起更新公告，聊天保留
+  if (isTouch || inIframe) {
+    enableDragLook();          // 触屏 / iframe 不支持指针锁定，用拖拽视角
+  } else if (fromGesture) {
+    // 只有同步的用户点击流程里才能立即锁定指针；建房/加入是异步回调，
+    // 此时请求会被浏览器拒绝，改为等玩家点一下画面再锁定
+    tryLock();
+  }
+  finishFakeLoad();            // 进入游戏后收起安慰式加载页
+}
+
+document.getElementById('btnSolo').addEventListener('click', e => {
+  e.stopPropagation();
+  myName = readName();
+  enterGame(true);
+  startFakeLoad(2000);        // 进入后先盖一层安慰式加载页，2 秒后露出世界
+  finishFakeLoad();
+});
+document.getElementById('btnRooms').addEventListener('click', e => {
+  e.stopPropagation();
+  myName = readName();
+  showRoomPanel();
+});
+document.getElementById('roomClose').addEventListener('click', e => {
+  e.stopPropagation();
+  hideRoomPanel();
+});
+document.getElementById('btnPrivJoin').addEventListener('click', e => {
+  e.stopPropagation();
+  const c = (((document.getElementById('privCodeInput') || {}).value) || '').trim();
+  if (!/^\d{2,6}$/.test(c)) { setRoomMsg('私密房间码是 2~6 位数字'); return; }
+  setRoomMsg('');
+  enterRoom('swpriv-' + c, '私密房间 ' + c);
+});
+document.getElementById('btnPrivNew').addEventListener('click', e => {
+  e.stopPropagation();
+  setRoomMsg('');
+  const c = String(Math.floor(100000 + Math.random() * 900000));
+  enterRoom('swpriv-' + c, '私密房间 ' + c, 'create');
+});
+// 手机「看」按钮：按住看自己，松开回第一人称
+const btnView = document.getElementById('btnView');
+const releaseView = () => { thirdPerson = false; };
+btnView.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  thirdPerson = true;
+});
+btnView.addEventListener('pointerup', releaseView);
+btnView.addEventListener('pointercancel', releaseView);
+btnView.addEventListener('pointerleave', releaseView);
+addEventListener('pointerup', releaseView);   // 手指滑出按钮外松开也生效
 
 // ========= 更新 =========
 // ========= 生物系统（简单 AI 小动物） =========
@@ -911,7 +2016,7 @@ function isInWater() {
   const px = Math.floor(player.pos.x);
   const py = Math.floor(player.pos.y + 0.8);
   const pz = Math.floor(player.pos.z);
-  return world.get(kkey(px, py, pz)) === 'water';
+  return getBlock(px, py, pz) === 'water';
 }
 
 // ========= 天气系统（随机下雨/晴天） =========
@@ -994,15 +2099,48 @@ function drawMinimap() {
   mctx.restore();
 }
 
+// ========= 自己的小球（第三人称可见） =========
+let selfBall = null, selfBallName = '';
+function ensureSelfBall() {
+  const name = myName || '玩家';
+  if (selfBall && selfBallName === name) return selfBall;
+  if (selfBall) {
+    scene.remove(selfBall);
+    selfBall.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
+    });
+    selfBall = null;
+  }
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.36, 18, 14),
+    new THREE.MeshLambertMaterial({ color: myColor() })
+  );
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const e1 = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), eyeMat);
+  const e2 = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), eyeMat);
+  e1.position.set(-0.13, 0.1, -0.32);
+  e2.position.set(0.13, 0.1, -0.32);
+  mesh.add(e1); mesh.add(e2);
+  const label = makeNameSprite(name);
+  label.position.set(0, 1.0, 0);
+  mesh.add(label);
+  scene.add(mesh);
+  selfBall = mesh;
+  selfBallName = name;
+  return mesh;
+}
+
 function update(dt) {
   updateDayNight(dt);
   updateWeather(dt);
   updateCreatures(dt);
+  netTick(dt);
+  updateRemotes(dt);
   drawMinimap();
   // 水中物理：减速、浮力、上浮
   const inWater = isInWater();
   const speed = inWater ? 3.0 : MOVE_SPEED;
-  const grav = inWater ? -8 : GRAVITY;
   // 移动方向（相对 yaw）
   let ix = 0, iz = 0;
   if (keys['KeyW']) iz += 1;
@@ -1023,17 +2161,24 @@ function update(dt) {
   player.vel.x = vx;
   player.vel.z = vz;
 
-  // 空格：水中上浮 / 地面跳跃
-  if (keys['Space']) {
-    if (inWater) { player.vel.y = 4.0; }       // 水中按空格向上游
-    else if (player.onGround) { player.vel.y = JUMP_VY; player.onGround = false; }
-  }
-  player.vel.y += grav * dt;
-  if (inWater) {
-    if (player.vel.y < -3) player.vel.y = -3;  // 水中下沉速度限制（浮力）
-    if (player.vel.y > 5) player.vel.y = 5;    // 上浮速度限制
+  // 空格：飞行上升 / 水中上浮 / 地面跳跃
+  if (flying) {
+    // 飞行：无视重力，空格上升、B（或 Shift / 手机「降」键）下降
+    player.vel.y = keys['Space'] ? FLY_SPEED
+                 : (((keys['KeyB'] || keys['ShiftLeft'] || keys['ShiftRight'])) ? -FLY_SPEED : 0);
   } else {
-    if (player.vel.y < -32) player.vel.y = -32;
+    const grav = inWater ? -8 : GRAVITY;
+    if (keys['Space']) {
+      if (inWater) { player.vel.y = 4.0; }       // 水中按空格向上游
+      else if (player.onGround) { player.vel.y = JUMP_VY; player.onGround = false; }
+    }
+    player.vel.y += grav * dt;
+    if (inWater) {
+      if (player.vel.y < -3) player.vel.y = -3;  // 水中下沉速度限制（浮力）
+      if (player.vel.y > 5) player.vel.y = 5;    // 上浮速度限制
+    } else {
+      if (player.vel.y < -32) player.vel.y = -32;
+    }
   }
 
   // 分轴碰撞
@@ -1042,17 +2187,34 @@ function update(dt) {
   player.onGround = false;
   player.pos.y += player.vel.y * dt; resolveAxis('y');
 
+  // 跨区块时按需加载脚下 3×3、卸载远处
+  updateChunks();
+
   // 掉出世界重置
   if (player.pos.y < -20) {
-    player.pos.set(30, topYAt(30, 30) + 3, 30);
+    player.pos.set(SPAWN_X, topYAt(SPAWN_X, SPAWN_Z) + 3, SPAWN_Z);
     player.vel.set(0, 0, 0);
   }
 
-  // 相机
-  camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
-  camera.rotation.order = 'YXZ';
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
+  // 相机（P 键 / 「看」按钮切换第三人称看自己）
+  if (thirdPerson) {
+    const b = ensureSelfBall();
+    b.visible = true;
+    b.position.set(player.pos.x, player.pos.y + 0.36, player.pos.z);
+    b.rotation.y = yaw;
+    camera.position.set(
+      player.pos.x + Math.sin(yaw) * 4.5,
+      player.pos.y + 2.4,
+      player.pos.z + Math.cos(yaw) * 4.5
+    );
+    camera.lookAt(player.pos.x, player.pos.y + 1.0, player.pos.z);
+  } else {
+    if (selfBall) selfBall.visible = false;
+    camera.position.set(player.pos.x, player.pos.y + EYE, player.pos.z);
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+  }
 
   // 坐标显示（X/Z 相对出生点，Y 绝对高度，基岩=0）
   coordsEl.textContent = 'X: ' + Math.round(player.pos.x - spawnX) + '  Y: ' + Math.round(player.pos.y) + '  Z: ' + Math.round(player.pos.z - spawnZ);
@@ -1078,25 +2240,40 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// ========= 加载动画（5秒进度条，期间世界已在后台渲染） =========
+// ========= 加载动画（安慰式进度条） =========
 const loadFill = document.getElementById('loadFill');
 const loadPct  = document.getElementById('loadPct');
 const loadEl   = document.getElementById('loading');
-const LOAD_MS = 5000;
-const loadT0 = performance.now();
-animate();   // 先启动渲染循环，让世界在加载页下方渲染好
-(function loadingTick() {
-  const e = performance.now() - loadT0;
-  const pct = Math.min(100, (e / LOAD_MS) * 100);
-  loadFill.style.width = pct + '%';
-  loadPct.textContent = '加载中... ' + Math.floor(pct) + '%';
-  if (pct < 100) {
-    requestAnimationFrame(loadingTick);
-  } else {
-    loadPct.textContent = '加载完成！';
-    setTimeout(() => loadEl.classList.add('hidden'), 300);  // 短暂停留后显示开始封面
-  }
-})();
+// ========= 加载动画（安慰式进度条：按固定时长从 0 走到 100%，与真实加载无关） =========
+let fakeLoadT0 = 0, fakeLoadMs = 2000, fakeLoadId = 0;
+// 显示加载页并从 0% 走到 100%
+function startFakeLoad(ms) {
+  fakeLoadId++;                       // 新的一次加载：让之前排队的收起动作失效
+  fakeLoadT0 = performance.now();
+  fakeLoadMs = ms || 2000;
+  loadEl.classList.remove('hidden');
+  loadFill.style.width = '0%';
+  loadPct.textContent = '正在加载中，请稍后等待 0%';
+  (function tick() {
+    const e = performance.now() - fakeLoadT0;
+    const pct = Math.min(100, (e / fakeLoadMs) * 100);
+    loadFill.style.width = pct + '%';
+    loadPct.textContent = '正在加载中，请稍后等待 ' + Math.floor(pct) + '%';
+    if (pct < 100) requestAnimationFrame(tick);
+  })();
+}
+// 目标已就绪：等进度条走满后再收起加载页
+function finishFakeLoad() {
+  const id = fakeLoadId;
+  const remain = fakeLoadMs - (performance.now() - fakeLoadT0);
+  setTimeout(() => {
+    if (id === fakeLoadId) loadEl.classList.add('hidden');   // 期间没有开始新的加载才收起
+  }, Math.max(0, remain + 120));
+}
+
+animate();                                   // 先启动渲染循环，让世界在加载页下方渲染好
+startFakeLoad(2000);                         // 开头：2 秒安慰式加载，然后显示开始封面
+finishFakeLoad();
 </script>
 </body>
 </html>
